@@ -299,11 +299,32 @@ function cleanSqlDumpFile(string $filePath, array $tablesToDrop, array $columnsT
         $content = preg_replace('/--\s*(?:表的结构|表的数据)\s*[`"]?' . preg_quote($tbl, '/') . '[`"]?[^\r\n]*\r?\n/is', '', $content);
     }
 
+    // 2. 自动注入 sys_setting 系统配置表定义
+    if (strpos($content, 'CREATE TABLE `sys_setting`') === false) {
+        $sysSettingSql = "\n\n-- --------------------------------------------------------\n\n"
+            . "--\n-- 表的结构 `sys_setting` (新系统键值配置表)\n--\n\n"
+            . "CREATE TABLE IF NOT EXISTS `sys_setting` (\n"
+            . "  `key` varchar(191) NOT NULL,\n"
+            . "  `value` longtext NOT NULL,\n"
+            . "  PRIMARY KEY (`key`)\n"
+            . ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n\n"
+            . "INSERT INTO `sys_setting` (`key`, `value`) VALUES\n"
+            . "('site_name', '技术思维棱镜'),\n"
+            . "('site_subtitle', '专注技术记录、脚本折腾与实战经验分享'),\n"
+            . "('author_name', 'Brian'),\n"
+            . "('author_bio', '热爱技术与折腾'),\n"
+            . "('admin_username', 'admin'),\n"
+            . "('admin_password', 'admin123')\n"
+            . "ON DUPLICATE KEY UPDATE `value`=VALUES(`value`);\n";
+        $content .= $sysSettingSql;
+    }
+
     $outPath = pathinfo($filePath, PATHINFO_DIRNAME) . '/' . pathinfo($filePath, PATHINFO_FILENAME) . '_cleaned.sql';
     file_put_contents($outPath, $content);
     $newLen = strlen($content);
 
     echo "\n✅ 纯净版 SQL 文件生成完毕: " . basename($outPath) . "\n";
+    echo "   - 已包含自动初始化的 `sys_setting` 系统配置表\n";
     echo "   - 处理后大小: " . formatSize($newLen) . "\n";
     echo "   - 瘦身体积: " . formatSize($origLen - $newLen) . "\n";
 }

@@ -5225,3 +5225,25 @@ COMMIT;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+
+
+-- --------------------------------------------------------
+
+--
+-- 表的结构 `sys_setting` (新系统键值配置表)
+--
+
+CREATE TABLE IF NOT EXISTS `sys_setting` (
+  `key` varchar(191) NOT NULL,
+  `value` longtext NOT NULL,
+  PRIMARY KEY (`key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT INTO `sys_setting` (`key`, `value`) VALUES
+('site_name', '技术思维棱镜'),
+('site_subtitle', '专注技术记录、脚本折腾与实战经验分享'),
+('author_name', 'Brian'),
+('author_bio', '热爱技术与折腾'),
+('admin_username', 'admin'),
+('admin_password', 'admin123')
+ON DUPLICATE KEY UPDATE `value`=VALUES(`value`);
