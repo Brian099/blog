@@ -2,13 +2,14 @@
 /** @var array $siteSettings */
 /** @var array $categories */
 $siteName = $siteSettings['site_name'] ?? '技术思维棱镜';
+$siteSubtitle = $siteSettings['site_subtitle'] ?? '';
 ?>
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= isset($currentPost) && $currentPost ? htmlspecialchars($currentPost['title']) . ' - ' : '' ?><?= htmlspecialchars($siteName) ?></title>
+    <title><?= isset($currentPost) && $currentPost ? htmlspecialchars($currentPost['title']) . ' - ' : '' ?><?= htmlspecialchars($siteName) ?><?= $siteSubtitle ? ' | ' . htmlspecialchars($siteSubtitle) : '' ?></title>
     <link rel="stylesheet" href="/assets/css/style.css">
     <!-- Highlight.js for professional code highlighting -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
@@ -23,7 +24,7 @@ $siteName = $siteSettings['site_name'] ?? '技术思维棱镜';
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
         </button>
 
-        <a href="/" class="site-logo">
+        <a href="/" class="site-logo" title="<?= htmlspecialchars($siteSubtitle) ?>">
             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
             <span><?= htmlspecialchars($siteName) ?></span>
         </a>

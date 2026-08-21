@@ -1,4 +1,6 @@
 <?php
+use App\Models\Setting;
+$adminSiteName = Setting::get('site_name', '技术思维棱镜');
 $currentRoute = $_SERVER['REQUEST_URI'] ?? '/admin';
 ?>
 <!DOCTYPE html>
@@ -6,7 +8,7 @@ $currentRoute = $_SERVER['REQUEST_URI'] ?? '/admin';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $pageTitle ?? '管理后台' ?> - 技术思维棱镜</title>
+    <title><?= $pageTitle ?? '管理后台' ?> - <?= htmlspecialchars($adminSiteName) ?></title>
     <link rel="stylesheet" href="/assets/css/admin.css">
 </head>
 <body>
@@ -16,7 +18,7 @@ $currentRoute = $_SERVER['REQUEST_URI'] ?? '/admin';
     <aside class="admin-sidebar">
         <div class="admin-brand">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="#38bdf8"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-            <span>博客控制台</span>
+            <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="<?= htmlspecialchars($adminSiteName) ?>"><?= htmlspecialchars($adminSiteName) ?></span>
         </div>
 
         <nav class="admin-nav">

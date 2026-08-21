@@ -70,7 +70,7 @@ class BlogController {
             require VIEW_PATH . '/partials/post-content.php';
             $html = ob_get_clean();
 
-            $siteTitle = \App\Models\Setting::get('site_title') ?: '技术思维棱镜';
+            $siteTitle = \App\Models\Setting::get('site_name', '技术思维棱镜');
             echo json_encode([
                 'success' => true,
                 'html' => $html,

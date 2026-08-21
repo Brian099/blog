@@ -1,5 +1,6 @@
 <?php
 /** @var array $post */
+$siteSettings = $siteSettings ?? \App\Models\Setting::getAll();
 ?>
 <?php if ($post): ?>
     <article class="article-container">
@@ -24,6 +25,10 @@
             <h1 class="article-title"><?= htmlspecialchars($post['title']) ?></h1>
 
             <div class="article-meta">
+                <?php if (!empty($siteSettings['author_name'])): ?>
+                    <span style="font-weight: 500;">✍️ <?= htmlspecialchars($siteSettings['author_name']) ?></span>
+                    <span>·</span>
+                <?php endif; ?>
                 <span><?= $post['date_formatted'] ?></span>
                 <span>·</span>
                 <span>阅读需 <?= $post['read_time'] ?> 分钟</span>
@@ -65,6 +70,26 @@
                 <?= $post['content'] ?>
             <?php endif; ?>
         </div>
+
+        <!-- Author Bio Card -->
+        <?php if (!empty($siteSettings['author_name']) || !empty($siteSettings['author_bio'])): ?>
+            <div class="article-author-card" style="margin-top: 40px; margin-bottom: 24px; padding: 18px 22px; background: var(--bg-hover); border-radius: var(--radius-md); border: 1px solid var(--border-color); display: flex; gap: 16px; align-items: center;">
+                <div style="width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--primary-hover)); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.15rem; flex-shrink: 0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+                    <?= mb_substr($siteSettings['author_name'] ?? 'B', 0, 1, 'UTF-8') ?>
+                </div>
+                <div style="flex: 1; min-width: 0;">
+                    <div style="display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;">
+                        <span style="font-size: 0.95rem; font-weight: 700; color: var(--text-title);"><?= htmlspecialchars($siteSettings['author_name'] ?? '作者') ?></span>
+                        <?php if (!empty($siteSettings['site_subtitle'])): ?>
+                            <span style="font-size: 0.8rem; color: var(--text-light);"><?= htmlspecialchars($siteSettings['site_subtitle']) ?></span>
+                        <?php endif; ?>
+                    </div>
+                    <?php if (!empty($siteSettings['author_bio'])): ?>
+                        <p style="font-size: 0.84rem; color: var(--text-muted); margin-top: 3px; line-height: 1.5;"><?= htmlspecialchars($siteSettings['author_bio']) ?></p>
+                    <?php endif; ?>
+                </div>
+            </div>
+        <?php endif; ?>
 
         <?php if (!empty($post['prev']) || !empty($post['next'])): ?>
             <nav class="article-footer-nav">

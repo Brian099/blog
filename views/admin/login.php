@@ -1,9 +1,13 @@
+<?php
+use App\Models\Setting;
+$loginSiteName = Setting::get('site_name', '技术思维棱镜');
+?>
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>后台登录 - 技术思维棱镜</title>
+    <title>后台登录 - <?= htmlspecialchars($loginSiteName) ?></title>
     <link rel="stylesheet" href="/assets/css/admin.css">
     <style>
         .login-wrap {
@@ -27,8 +31,8 @@
 <div class="login-wrap">
     <div class="login-card">
         <div style="text-align: center; margin-bottom: 24px;">
-            <h2 style="font-size: 1.5rem; font-weight: 700; color: #0f172a;">博客管理系统</h2>
-            <p style="color: #64748b; font-size: 0.88rem; margin-top: 4px;">请输入管理员凭证以登录</p>
+            <h2 style="font-size: 1.4rem; font-weight: 700; color: #0f172a; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"><?= htmlspecialchars($loginSiteName) ?></h2>
+            <p style="color: #64748b; font-size: 0.88rem; margin-top: 4px;">管理员登录控制台</p>
         </div>
 
         <?php if (!empty($error)): ?>
