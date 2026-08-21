@@ -54,6 +54,9 @@
                                         <?php if (!empty($p['is_top'])): ?>
                                             <span class="top-badge">置顶</span>
                                         <?php endif; ?>
+                                        <?php if (!empty($p['is_protected'])): ?>
+                                            <span title="密码保护文章" style="font-size: 0.8rem; margin-right: 2px;">🔒</span>
+                                        <?php endif; ?>
                                         <?= htmlspecialchars($p['title']) ?>
                                     </a>
                                 </li>

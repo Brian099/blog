@@ -45,6 +45,14 @@ try {
             (new BlogController())->index();
             break;
 
+        case '/post/json':
+            (new BlogController())->getPostJson();
+            break;
+
+        case '/post/unlock':
+            (new BlogController())->unlock();
+            break;
+
         case '/api/post':
             (new BlogController())->apiGetPost((int)($_GET['id'] ?? 0));
             break;

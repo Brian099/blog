@@ -95,6 +95,12 @@ ob_start();
                 </div>
 
                 <div class="form-group">
+                    <label class="form-label">访问密码保护 (留空表示公开)</label>
+                    <input type="text" name="password" class="form-input" value="<?= htmlspecialchars($post['password'] ?? '') ?>" placeholder="设置访问密码，留空则公开">
+                    <span style="font-size: 0.75rem; color: #64748b; margin-top: 2px; display: block;">设置密码后，前台用户需输入密码方可查看正文</span>
+                </div>
+
+                <div class="form-group">
                     <label style="display: flex; align-items: center; gap: 8px; font-weight: 500; cursor: pointer;">
                         <input type="checkbox" name="is_top" value="1" <?= (!empty($post['is_top'])) ? 'checked' : '' ?>>
                         <span>置顶此文章</span>

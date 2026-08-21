@@ -157,6 +157,64 @@ function initCodeHighlightAndCopy() {
 }
 
 /* ==========================================================================
+   Password Protected Post Unlock
+   ========================================================================== */
+window.submitPostUnlock = async function(e, postId) {
+    if (e) e.preventDefault();
+    const pwdInput = document.getElementById('post-unlock-pwd');
+    const errorMsg = document.getElementById('unlock-error-msg');
+    const submitBtn = document.getElementById('unlock-submit-btn');
+
+    if (!pwdInput || !pwdInput.value) return;
+
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerText = '正在验证解锁...';
+    }
+    if (errorMsg) errorMsg.style.display = 'none';
+
+    try {
+        const form = new FormData();
+        form.append('id', postId);
+        form.append('password', pwdInput.value.trim());
+
+        const res = await fetch('/post/unlock', { method: 'POST', body: form });
+        const data = await res.json();
+
+        if (data.success) {
+            const container = document.getElementById('article-content-container');
+            if (container) {
+                container.innerHTML = data.html;
+                if (data.title) document.title = data.title;
+                // 重新初始化代码高亮与灯箱
+                initCodeBlocks();
+                initLightbox();
+            }
+        } else {
+            if (errorMsg) {
+                errorMsg.innerText = data.message || '密码错误';
+                errorMsg.style.display = 'block';
+            }
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerText = '立即解锁文章 🔓';
+            }
+            pwdInput.focus();
+            pwdInput.select();
+        }
+    } catch (err) {
+        if (errorMsg) {
+            errorMsg.innerText = '网络连接失败，请稍后再试';
+            errorMsg.style.display = 'block';
+        }
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerText = '立即解锁文章 🔓';
+        }
+    }
+};
+
+/* ==========================================================================
    Image Lightbox (Click to View Full Size)
    ========================================================================== */
 function initImageLightbox() {

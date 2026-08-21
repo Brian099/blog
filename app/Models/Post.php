@@ -9,7 +9,7 @@ class Post {
      * 获取按年份分组的文章树（左侧栏使用，包含全量公开文章）
      */
     public static function getYearGroupedTree(?int $categoryId = null, ?int $tagId = null, string $keyword = ''): array {
-        $sql = "SELECT log_ID, log_Title, log_PostTime, log_CateID, log_Tag, log_ViewNums, log_IsTop 
+        $sql = "SELECT log_ID, log_Title, log_PostTime, log_CateID, log_Tag, log_ViewNums, log_IsTop, log_Meta 
                 FROM zbp_post 
                 WHERE log_Status = 0 AND log_Type = 0";
         $params = [];
@@ -44,13 +44,23 @@ class Post {
             if (!isset($tree[$year])) {
                 $tree[$year] = [];
             }
+
+            $isProtected = false;
+            if (!empty($row['log_Meta'])) {
+                $meta = json_decode($row['log_Meta'], true);
+                if (is_array($meta) && !empty($meta['password'])) {
+                    $isProtected = true;
+                }
+            }
+
             $tree[$year][] = [
                 'id' => (int)$row['log_ID'],
                 'title' => $row['log_Title'],
                 'post_time' => (int)$row['log_PostTime'],
                 'date_str' => Helpers::formatDate((int)$row['log_PostTime'], 'm-d'),
                 'is_top' => (int)$row['log_IsTop'],
-                'views' => (int)$row['log_ViewNums']
+                'views' => (int)$row['log_ViewNums'],
+                'is_protected' => $isProtected
             ];
         }
 
@@ -97,6 +107,32 @@ class Post {
             [$post['log_PostTime']]
         );
 
+        // 解析 log_Meta 中的自定义密码
+        $meta = [];
+        if (!empty($post['log_Meta'])) {
+            $decoded = json_decode($post['log_Meta'], true);
+            if (is_array($decoded)) {
+                $meta = $decoded;
+            } elseif (preg_match('/password[:=]([^\s;,]+)/i', $post['log_Meta'], $m)) {
+                $meta['password'] = trim($m[1]);
+            }
+        }
+
+        $password = $meta['password'] ?? '';
+        $isProtected = !empty($password);
+
+        // 检查当前访问者是否已在 Session 中解锁或为已登录管理员
+        $isUnlocked = false;
+        if (!$isProtected) {
+            $isUnlocked = true;
+        } else {
+            if (!empty($_SESSION['admin_logged_in'])) {
+                $isUnlocked = true;
+            } elseif (!empty($_SESSION['unlocked_posts'][(int)$post['log_ID']])) {
+                $isUnlocked = true;
+            }
+        }
+
         return [
             'id' => (int)$post['log_ID'],
             'title' => $post['log_Title'],
@@ -113,9 +149,41 @@ class Post {
             'cate_id' => (int)$post['log_CateID'],
             'tags' => $tags,
             'tags_raw' => $post['log_Tag'],
+            'alias' => $post['log_Alias'] ?? '',
+            'meta' => $meta,
+            'password' => $password,
+            'is_protected' => $isProtected,
+            'is_unlocked' => $isUnlocked,
             'prev' => $prev,
             'next' => $next
         ];
+    }
+
+    /**
+     * 验证文章访问密码并解锁
+     */
+    public static function unlock(int $id, string $inputPassword): bool {
+        $post = self::getDetail($id);
+        if (!$post || !$post['is_protected']) {
+            return true;
+        }
+
+        if (trim($inputPassword) === (string)$post['password']) {
+            if (!isset($_SESSION['unlocked_posts'])) {
+                $_SESSION['unlocked_posts'] = [];
+            }
+            $_SESSION['unlocked_posts'][$id] = true;
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * 后台通过 ID 获取单篇用于编辑
+     */
+    public static function findById(int $id): ?array {
+        return self::getDetail($id);
     }
 
     /**
@@ -208,15 +276,33 @@ class Post {
         $alias = trim($data['alias'] ?? '');
 
         if ($id && $id > 0) {
+            // 获取原有 meta
+            $old = Database::queryOne("SELECT log_Meta FROM zbp_post WHERE log_ID = ?", [$id]);
+            $meta = [];
+            if (!empty($old['log_Meta'])) {
+                $decoded = json_decode($old['log_Meta'], true);
+                if (is_array($decoded)) $meta = $decoded;
+            }
+            if (isset($data['password'])) {
+                $meta['password'] = trim($data['password']);
+            }
+            $metaJson = !empty($meta) ? json_encode($meta, JSON_UNESCAPED_UNICODE) : '';
+
             Database::execute(
-                "UPDATE zbp_post SET log_Title = ?, log_Content = ?, log_Intro = ?, log_CateID = ?, log_Status = ?, log_IsTop = ?, log_Tag = ?, log_Alias = ?, log_UpdateTime = ? WHERE log_ID = ?",
-                [$title, $content, $intro, $cateId, $status, $isTop, $tagsRaw, $alias, $time, $id]
+                "UPDATE zbp_post SET log_Title = ?, log_Content = ?, log_Intro = ?, log_CateID = ?, log_Status = ?, log_IsTop = ?, log_Tag = ?, log_Alias = ?, log_Meta = ?, log_UpdateTime = ? WHERE log_ID = ?",
+                [$title, $content, $intro, $cateId, $status, $isTop, $tagsRaw, $alias, $metaJson, $time, $id]
             );
             return $id;
         } else {
+            $meta = [];
+            if (!empty($data['password'])) {
+                $meta['password'] = trim($data['password']);
+            }
+            $metaJson = !empty($meta) ? json_encode($meta, JSON_UNESCAPED_UNICODE) : '';
+
             Database::execute(
-                "INSERT INTO zbp_post (log_Title, log_Content, log_Intro, log_CateID, log_Status, log_IsTop, log_Tag, log_Alias, log_AuthorID, log_Type, log_PostTime, log_CreateTime, log_UpdateTime) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 0, ?, ?, ?)",
-                [$title, $content, $intro, $cateId, $status, $isTop, $tagsRaw, $alias, $time, $time, $time]
+                "INSERT INTO zbp_post (log_Title, log_Content, log_Intro, log_CateID, log_Status, log_IsTop, log_Tag, log_Alias, log_AuthorID, log_Type, log_Meta, log_PostTime, log_CreateTime, log_UpdateTime) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 0, ?, ?, ?, ?)",
+                [$title, $content, $intro, $cateId, $status, $isTop, $tagsRaw, $alias, $metaJson, $time, $time, $time]
             );
             return (int)Database::lastInsertId();
         }

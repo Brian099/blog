@@ -49,6 +49,39 @@ class BlogController {
     }
 
     /**
+     * 密码验证与文章解锁 API
+     */
+    public function unlock(): void {
+        header('Content-Type: application/json; charset=utf-8');
+        $id = (int)($_POST['id'] ?? 0);
+        $pwd = trim($_POST['password'] ?? '');
+
+        if (!$id || empty($pwd)) {
+            echo json_encode(['success' => false, 'message' => '请输入访问密码']);
+            return;
+        }
+
+        $ok = Post::unlock($id, $pwd);
+        if ($ok) {
+            $post = Post::getDetail($id);
+
+            // 渲染正文区域 HTML
+            ob_start();
+            require VIEW_PATH . '/partials/post-content.php';
+            $html = ob_get_clean();
+
+            $siteTitle = \App\Models\Setting::get('site_title') ?: '技术思维棱镜';
+            echo json_encode([
+                'success' => true,
+                'html' => $html,
+                'title' => $post['title'] . ' - ' . $siteTitle
+            ]);
+        } else {
+            echo json_encode(['success' => false, 'message' => '访问密码错误，请重试']);
+        }
+    }
+
+    /**
      * AJAX 局部获取文章内容（用于无刷新秒级切换）
      */
     public function apiGetPost(int $id): void {

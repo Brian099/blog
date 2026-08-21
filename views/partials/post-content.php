@@ -32,8 +32,38 @@
             </div>
         </header>
 
+        <!-- Article Body -->
         <div class="article-body">
-            <?= $post['content'] ?>
+            <?php if ($post['is_protected'] && !$post['is_unlocked']): ?>
+                <!-- Password Protection Lock Card -->
+                <div class="password-lock-card" style="margin: 40px auto; max-width: 480px; padding: 36px 28px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); text-align: center; box-shadow: var(--shadow-md);">
+                    <div style="width: 56px; height: 56px; margin: 0 auto 18px; border-radius: 50%; background: #fef2f2; color: #dc2626; display: flex; align-items: center; justify-content: center;">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                    </div>
+
+                    <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--text-title); margin-bottom: 8px;">这是一篇密码受保护的文章</h3>
+                    <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 24px; line-height: 1.5;">作者为本篇技术记录设置了访问密码，请输入正确密码以解锁完整正文。</p>
+
+                    <?php if (!empty($post['intro'])): ?>
+                        <div style="text-align: left; padding: 12px 16px; background: var(--bg-hover); border-left: 3px solid var(--primary); border-radius: var(--radius-sm); font-size: 0.88rem; color: var(--text-main); margin-bottom: 20px;">
+                            <strong>文章摘要：</strong><?= htmlspecialchars($post['intro']) ?>
+                        </div>
+                    <?php endif; ?>
+
+                    <form id="post-unlock-form" data-post-id="<?= $post['id'] ?>" onsubmit="submitPostUnlock(event, <?= $post['id'] ?>)" style="display: flex; flex-direction: column; gap: 12px;">
+                        <div style="position: relative;">
+                            <input type="password" id="post-unlock-pwd" class="form-input" placeholder="输入访问密码..." required 
+                                   style="width: 100%; padding: 12px 16px; font-size: 0.95rem; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-main); text-align: center; letter-spacing: 2px;">
+                        </div>
+                        <div id="unlock-error-msg" style="display: none; color: #dc2626; font-size: 0.84rem; font-weight: 500;"></div>
+                        <button type="submit" id="unlock-submit-btn" class="btn btn-primary" style="width: 100%; padding: 12px; font-size: 0.95rem; font-weight: 600; justify-content: center;">
+                            立即解锁文章 🔓
+                        </button>
+                    </form>
+                </div>
+            <?php else: ?>
+                <?= $post['content'] ?>
+            <?php endif; ?>
         </div>
 
         <?php if (!empty($post['prev']) || !empty($post['next'])): ?>
