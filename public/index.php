@@ -26,11 +26,36 @@ $parsedUrl = parse_url($requestUri);
 $path = rtrim($parsedUrl['path'] ?? '/', '/');
 if (empty($path)) $path = '/';
 
-// Static file fallback for PHP built-in server
-if (php_sapi_name() === 'cli-server') {
-    $filePath = PUBLIC_PATH . $path;
-    if ($path !== '/' && file_exists($filePath) && !is_dir($filePath)) {
-        return false;
+// 静态资源兜底路由（无论 Nginx 运行目录指向根目录还是 public 目录，均能 100% 正确加载 CSS/JS/图片）
+if (strpos($path, '/assets/') === 0 || strpos($path, '/uploads/') === 0 || strpos($path, '/zb_users/upload/') === 0) {
+    $rel = ltrim($path, '/');
+    $possibleFiles = [
+        PUBLIC_PATH . $path,
+        ROOT_PATH . $path,
+        UPLOAD_PATH . str_replace(['/uploads', '/zb_users/upload'], '', $path)
+    ];
+    foreach ($possibleFiles as $file) {
+        if (file_exists($file) && is_file($file)) {
+            $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+            $mimes = [
+                'css' => 'text/css; charset=utf-8',
+                'js' => 'application/javascript; charset=utf-8',
+                'png' => 'image/png',
+                'jpg' => 'image/jpeg',
+                'jpeg' => 'image/jpeg',
+                'gif' => 'image/gif',
+                'svg' => 'image/svg+xml',
+                'webp' => 'image/webp',
+                'ico' => 'image/x-icon',
+                'woff' => 'font/woff',
+                'woff2' => 'font/woff2',
+                'ttf' => 'font/ttf'
+            ];
+            header('Content-Type: ' . ($mimes[$ext] ?? 'application/octet-stream'));
+            header('Cache-Control: public, max-age=86400');
+            readfile($file);
+            exit;
+        }
     }
 }
 
