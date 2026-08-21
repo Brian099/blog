@@ -113,6 +113,14 @@ try {
             (new AdminController())->mediaCleanOrphans();
             break;
 
+        case '/admin/media/disk-delete-batch':
+            (new AdminController())->mediaDiskDeleteBatch();
+            break;
+
+        case '/admin/media/disk-clean-orphans':
+            (new AdminController())->mediaDiskCleanOrphans();
+            break;
+
         case '/admin/ueditor-api':
             (new AdminController())->ueditorApi();
             break;

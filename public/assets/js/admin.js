@@ -67,6 +67,85 @@ function initMediaCleaner() {
         });
     }
 
+    // --- 磁盘模式多选与批量删除 ---
+    const selectAllDiskCb = document.getElementById('select-all-disk-media');
+    const diskMediaCbs = document.querySelectorAll('.disk-media-select-cb');
+    const diskBatchDelBtn = document.getElementById('disk-batch-delete-btn');
+
+    if (selectAllDiskCb) {
+        selectAllDiskCb.addEventListener('change', () => {
+            diskMediaCbs.forEach(cb => cb.checked = selectAllDiskCb.checked);
+            updateDiskBatchBtn();
+        });
+    }
+
+    diskMediaCbs.forEach(cb => {
+        cb.addEventListener('change', updateDiskBatchBtn);
+    });
+
+    function updateDiskBatchBtn() {
+        const checked = document.querySelectorAll('.disk-media-select-cb:checked');
+        if (diskBatchDelBtn) {
+            diskBatchDelBtn.disabled = checked.length === 0;
+            diskBatchDelBtn.innerText = `批量删除选中磁盘文件 (${checked.length})`;
+        }
+    }
+
+    if (diskBatchDelBtn) {
+        diskBatchDelBtn.addEventListener('click', async () => {
+            const checked = Array.from(document.querySelectorAll('.disk-media-select-cb:checked')).map(cb => cb.value);
+            if (checked.length === 0) return;
+            if (!confirm(`确定彻底从物理磁盘删除选中的 ${checked.length} 个文件？此操作不可逆！`)) return;
+
+            diskBatchDelBtn.disabled = true;
+            diskBatchDelBtn.innerText = '正在物理删除...';
+
+            const form = new FormData();
+            checked.forEach(path => form.append('paths[]', path));
+
+            try {
+                const res = await fetch('/admin/media/disk-delete-batch', { method: 'POST', body: form });
+                const data = await res.json();
+                if (data.success) {
+                    alert(`成功从磁盘删除 ${data.result.deleted} 个文件，释放存储空间 ${data.result.freed_formatted}`);
+                    window.location.reload();
+                } else {
+                    alert('删除失败');
+                    diskBatchDelBtn.disabled = false;
+                }
+            } catch (err) {
+                alert('网络请求失败');
+                diskBatchDelBtn.disabled = false;
+            }
+        });
+    }
+
+    // --- 一键物理清理磁盘所有孤立文件 ---
+    const cleanAllDiskOrphansBtn = document.getElementById('clean-all-disk-orphans-btn');
+    if (cleanAllDiskOrphansBtn) {
+        cleanAllDiskOrphansBtn.addEventListener('click', async () => {
+            if (!confirm('警告：此操作将全盘遍历物理目录，彻底删除所有【未被任何文章引用】的孤立文件并释放磁盘空间！是否继续？')) return;
+
+            cleanAllDiskOrphansBtn.disabled = true;
+            cleanAllDiskOrphansBtn.innerHTML = '正在深度全盘清理中...';
+
+            try {
+                const res = await fetch('/admin/media/disk-clean-orphans', { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    alert(`磁盘清理完毕！共删除 ${data.result.deleted} 个冗余孤立文件，释放空间 ${data.result.freed_formatted}`);
+                    window.location.reload();
+                } else {
+                    alert('清理失败');
+                    cleanAllDiskOrphansBtn.disabled = false;
+                }
+            } catch (err) {
+                alert('请求异常');
+                cleanAllDiskOrphansBtn.disabled = false;
+            }
+        });
+    }
+
     // 一键清理全部未引用孤立附件
     if (cleanAllOrphansBtn) {
         cleanAllOrphansBtn.addEventListener('click', async () => {

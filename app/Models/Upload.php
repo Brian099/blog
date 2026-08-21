@@ -210,6 +210,227 @@ class Upload {
     }
 
     /**
+     * 递归全盘扫描 public/uploads/ 目录下的所有物理文件
+     */
+    public static function scanDiskFiles(int $page = 1, int $perPage = 20, string $keyword = '', ?bool $onlyOrphans = false): array {
+        $refMap = self::buildReferenceMap();
+
+        // 获取数据库中已有的所有文件名集合
+        $dbRecords = Database::query("SELECT ul_ID, ul_Name FROM zbp_upload");
+        $dbFileMap = [];
+        foreach ($dbRecords as $r) {
+            $dbFileMap[strtolower($r['ul_Name'])] = (int)$r['ul_ID'];
+        }
+
+        $allDiskFiles = [];
+        $baseUploadDir = realpath(UPLOAD_PATH) ?: UPLOAD_PATH;
+
+        if (is_dir($baseUploadDir)) {
+            $iterator = new \RecursiveIteratorIterator(
+                new \RecursiveDirectoryIterator($baseUploadDir, \RecursiveDirectoryIterator::SKIP_DOTS),
+                \RecursiveIteratorIterator::SELF_FIRST
+            );
+
+            foreach ($iterator as $file) {
+                if ($file->isFile()) {
+                    $filename = $file->getFilename();
+                    
+                    // 过滤掉系统隐藏文件如 .DS_Store, .gitkeep
+                    if (strpos($filename, '.') === 0) continue;
+
+                    // 关键字过滤
+                    if (!empty($keyword) && stripos($filename, $keyword) === false) {
+                        continue;
+                    }
+
+                    $fullPath = $file->getPathname();
+                    $size = $file->getSize();
+                    $mtime = $file->getMTime();
+                    
+                    // 计算相对 uploads 的路径，例如 /2021/04/xxx.jpg
+                    $relPath = str_replace('\\', '/', substr($fullPath, strlen($baseUploadDir)));
+                    $webUrl = '/uploads' . (strpos($relPath, '/') === 0 ? $relPath : '/' . $relPath);
+
+                    $fnLower = strtolower($filename);
+                    $refs = $refMap[$fnLower] ?? [];
+                    $refCount = count($refs);
+                    $isOrphan = ($refCount === 0);
+
+                    if ($onlyOrphans && !$isOrphan) {
+                        continue;
+                    }
+
+                    $mime = mime_content_type($fullPath) ?: 'application/octet-stream';
+                    $inDb = isset($dbFileMap[$fnLower]);
+                    $dbId = $inDb ? $dbFileMap[$fnLower] : null;
+
+                    $allDiskFiles[] = [
+                        'filename' => $filename,
+                        'rel_path' => $relPath,
+                        'web_url' => $webUrl,
+                        'full_path' => $fullPath,
+                        'size' => $size,
+                        'size_formatted' => Helpers::formatBytes($size),
+                        'mime' => $mime,
+                        'is_image' => (strpos($mime, 'image/') !== false),
+                        'mtime' => $mtime,
+                        'date_formatted' => date('Y-m-d H:i', $mtime),
+                        'ref_count' => $refCount,
+                        'is_orphan' => $isOrphan,
+                        'in_db' => $inDb,
+                        'db_id' => $dbId,
+                        'referencing_posts' => array_slice($refs, 0, 5)
+                    ];
+                }
+            }
+        }
+
+        // 按修改时间倒序排列
+        usort($allDiskFiles, function($a, $b) {
+            return $b['mtime'] <=> $a['mtime'];
+        });
+
+        $total = count($allDiskFiles);
+        $offset = ($page - 1) * $perPage;
+        $items = array_slice($allDiskFiles, $offset, $perPage);
+
+        return [
+            'total' => $total,
+            'page' => $page,
+            'per_page' => $perPage,
+            'total_pages' => (int)ceil($total / $perPage),
+            'items' => $items
+        ];
+    }
+
+    /**
+     * 获取全盘物理扫描统计
+     */
+    public static function getDiskStats(): array {
+        $refMap = self::buildReferenceMap();
+        $dbRecords = Database::query("SELECT ul_Name FROM zbp_upload");
+        $dbFileMap = [];
+        foreach ($dbRecords as $r) {
+            $dbFileMap[strtolower($r['ul_Name'])] = true;
+        }
+
+        $baseUploadDir = realpath(UPLOAD_PATH) ?: UPLOAD_PATH;
+        $totalCount = 0;
+        $totalBytes = 0;
+        $orphanCount = 0;
+        $orphanBytes = 0;
+        $untrackedCount = 0; // 磁盘上有但数据库无记录的文件
+
+        if (is_dir($baseUploadDir)) {
+            $iterator = new \RecursiveIteratorIterator(
+                new \RecursiveDirectoryIterator($baseUploadDir, \RecursiveDirectoryIterator::SKIP_DOTS)
+            );
+
+            foreach ($iterator as $file) {
+                if ($file->isFile()) {
+                    $fn = $file->getFilename();
+                    if (strpos($fn, '.') === 0) continue;
+
+                    $size = $file->getSize();
+                    $totalCount++;
+                    $totalBytes += $size;
+
+                    $fnLower = strtolower($fn);
+                    $isRef = isset($refMap[$fnLower]);
+                    if (!$isRef) {
+                        $orphanCount++;
+                        $orphanBytes += $size;
+                    }
+
+                    if (!isset($dbFileMap[$fnLower])) {
+                        $untrackedCount++;
+                    }
+                }
+            }
+        }
+
+        return [
+            'total_count' => $totalCount,
+            'total_bytes' => $totalBytes,
+            'total_size_formatted' => Helpers::formatBytes($totalBytes),
+            'orphan_count' => $orphanCount,
+            'orphan_bytes' => $orphanBytes,
+            'orphan_size_formatted' => Helpers::formatBytes($orphanBytes),
+            'used_count' => $totalCount - $orphanCount,
+            'untracked_count' => $untrackedCount
+        ];
+    }
+
+    /**
+     * 批量删除物理磁盘文件（并同步删除数据库记录）
+     */
+    public static function deleteDiskFilesBatch(array $relPaths): array {
+        $baseUploadDir = realpath(UPLOAD_PATH) ?: UPLOAD_PATH;
+        $deletedCount = 0;
+        $freedBytes = 0;
+        $deletedDbFilenames = [];
+
+        foreach ($relPaths as $rel) {
+            $rel = str_replace('\\', '/', trim($rel));
+            if (empty($rel)) continue;
+            
+            $fullPath = $baseUploadDir . '/' . ltrim($rel, '/');
+            if (file_exists($fullPath) && is_file($fullPath)) {
+                $size = filesize($fullPath);
+                $fn = basename($fullPath);
+                if (@unlink($fullPath)) {
+                    $deletedCount++;
+                    $freedBytes += $size;
+                    $deletedDbFilenames[] = $fn;
+                }
+            }
+        }
+
+        // 同步删除数据库中对应名称的记录
+        if (!empty($deletedDbFilenames)) {
+            $placeholders = implode(',', array_fill(0, count($deletedDbFilenames), '?'));
+            Database::execute("DELETE FROM zbp_upload WHERE ul_Name IN ($placeholders)", $deletedDbFilenames);
+        }
+
+        return [
+            'deleted' => $deletedCount,
+            'freed_bytes' => $freedBytes,
+            'freed_formatted' => Helpers::formatBytes($freedBytes)
+        ];
+    }
+
+    /**
+     * 一键物理清理磁盘所有未被文章引用的孤立文件
+     */
+    public static function cleanAllDiskOrphans(): array {
+        $refMap = self::buildReferenceMap();
+        $baseUploadDir = realpath(UPLOAD_PATH) ?: UPLOAD_PATH;
+        $orphansToDel = [];
+
+        if (is_dir($baseUploadDir)) {
+            $iterator = new \RecursiveIteratorIterator(
+                new \RecursiveDirectoryIterator($baseUploadDir, \RecursiveDirectoryIterator::SKIP_DOTS)
+            );
+
+            foreach ($iterator as $file) {
+                if ($file->isFile()) {
+                    $fn = $file->getFilename();
+                    if (strpos($fn, '.') === 0) continue;
+
+                    $fnLower = strtolower($fn);
+                    if (!isset($refMap[$fnLower])) {
+                        $fullPath = $file->getPathname();
+                        $relPath = substr($fullPath, strlen($baseUploadDir));
+                        $orphansToDel[] = $relPath;
+                    }
+                }
+            }
+        }
+
+        return self::deleteDiskFilesBatch($orphansToDel);
+    }
+
+    /**
      * 处理上传新文件
      */
     public static function handleUpload(array $file): ?array {

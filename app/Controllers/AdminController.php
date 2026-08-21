@@ -210,24 +210,29 @@ class AdminController {
     }
 
     /**
-     * 附件管理与智能清理核心模块
+     * 附件管理与智能清理核心模块 (支持数据库模式与磁盘全盘深度模式)
      */
     public function media(): void {
         $this->requireAuth();
 
+        $tab = $_GET['tab'] ?? 'db'; // 'db' or 'disk'
         $page = max(1, (int)($_GET['page'] ?? 1));
         $keyword = trim($_GET['q'] ?? '');
         $onlyOrphans = !empty($_GET['orphan']);
 
-        // 执行引用检测并获取列表
-        $data = Upload::getList($page, 20, $keyword, $onlyOrphans);
-        $stats = Upload::getStats();
+        if ($tab === 'disk') {
+            $data = Upload::scanDiskFiles($page, 20, $keyword, $onlyOrphans);
+            $stats = Upload::getDiskStats();
+        } else {
+            $data = Upload::getList($page, 20, $keyword, $onlyOrphans);
+            $stats = Upload::getStats();
+        }
 
         require VIEW_PATH . '/admin/media.php';
     }
 
     /**
-     * 批量删除选中的附件
+     * 批量删除选中的附件 (数据库模式)
      */
     public function mediaDeleteBatch(): void {
         $this->requireAuth();
@@ -244,13 +249,41 @@ class AdminController {
     }
 
     /**
-     * 一键清理所有未引用的孤立文件
+     * 一键清理所有未引用的孤立文件 (数据库模式)
      */
     public function mediaCleanOrphans(): void {
         $this->requireAuth();
         header('Content-Type: application/json; charset=utf-8');
 
         $res = Upload::cleanAllOrphans();
+        echo json_encode(['success' => true, 'result' => $res]);
+    }
+
+    /**
+     * 批量删除选中的物理磁盘文件 (磁盘深度模式)
+     */
+    public function mediaDiskDeleteBatch(): void {
+        $this->requireAuth();
+        header('Content-Type: application/json; charset=utf-8');
+
+        $paths = $_POST['paths'] ?? [];
+        if (!is_array($paths)) {
+            $paths = explode(',', (string)$paths);
+        }
+        $cleanPaths = array_filter(array_map('trim', $paths));
+
+        $res = Upload::deleteDiskFilesBatch($cleanPaths);
+        echo json_encode(['success' => true, 'result' => $res]);
+    }
+
+    /**
+     * 一键清理磁盘所有未引用的孤立物理文件 (磁盘深度模式)
+     */
+    public function mediaDiskCleanOrphans(): void {
+        $this->requireAuth();
+        header('Content-Type: application/json; charset=utf-8');
+
+        $res = Upload::cleanAllDiskOrphans();
         echo json_encode(['success' => true, 'result' => $res]);
     }
 
