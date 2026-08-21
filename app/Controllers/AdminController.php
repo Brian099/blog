@@ -36,15 +36,31 @@ class AdminController {
             $password = trim($_POST['password'] ?? '');
 
             $adminUser = Setting::get('admin_username', 'admin');
-            $adminPass = Setting::get('admin_password', 'admin123');
+            $adminPass = Setting::get('admin_password', '');
 
-            if ($username === $adminUser && $password === $adminPass) {
+            $isValid = false;
+            if ($username === $adminUser) {
+                if (!empty($adminPass)) {
+                    if (password_verify($password, $adminPass)) {
+                        $isValid = true;
+                    } elseif ($password === $adminPass) {
+                        // 兼容历史明文密码匹配，并自动平滑升级为安全加密存储
+                        $isValid = true;
+                        Setting::set('admin_password', password_hash($password, PASSWORD_DEFAULT));
+                    }
+                } elseif ($password === 'admin123') {
+                    $isValid = true;
+                    Setting::set('admin_password', password_hash('admin123', PASSWORD_DEFAULT));
+                }
+            }
+
+            if ($isValid) {
                 $_SESSION['admin_logged_in'] = true;
                 $_SESSION['admin_username'] = $username;
                 header('Location: /admin');
                 exit;
             } else {
-                $error = '用户名或密码错误（默认: admin / admin123）';
+                $error = '用户名或密码错误！';
             }
         }
 
@@ -526,8 +542,20 @@ class AdminController {
 
         $message = '';
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            Setting::updateMultiple($_POST);
-            $message = '设置保存成功！';
+            $data = $_POST;
+            
+            // 密码安全加密处理：若填写了新密码则进行安全哈希加密，留空则保持原密码不变
+            if (isset($data['admin_password'])) {
+                $newPass = trim($data['admin_password']);
+                if ($newPass !== '') {
+                    $data['admin_password'] = password_hash($newPass, PASSWORD_DEFAULT);
+                } else {
+                    unset($data['admin_password']);
+                }
+            }
+
+            Setting::updateMultiple($data);
+            $message = '系统设置已保存成功！';
         }
 
         $settings = Setting::getAll();

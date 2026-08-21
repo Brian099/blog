@@ -46,7 +46,10 @@ ob_start();
 
         <div class="form-group">
             <label class="form-label">管理登录密码</label>
-            <input type="password" name="admin_password" class="form-input" value="<?= htmlspecialchars($settings['admin_password'] ?? 'admin123') ?>" required>
+            <input type="password" name="admin_password" class="form-input" placeholder="留空表示不修改密码" autocomplete="new-password">
+            <small style="color:var(--admin-text-muted); font-size:0.8rem; display:block; margin-top:6px; line-height:1.4;">
+                🔒 留空则保持现有密码不变。输入新密码保存后将采用工业级 Bcrypt 哈希安全加密，数据库中不会出现明文。
+            </small>
         </div>
 
         <button type="submit" class="btn btn-primary" style="padding: 10px 24px; margin-top: 10px;">

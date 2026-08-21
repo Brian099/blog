@@ -301,6 +301,7 @@ function cleanSqlDumpFile(string $filePath, array $tablesToDrop, array $columnsT
 
     // 2. 自动注入 sys_setting 系统配置表定义
     if (strpos($content, 'CREATE TABLE `sys_setting`') === false) {
+        $defaultPassHash = password_hash('admin123', PASSWORD_DEFAULT);
         $sysSettingSql = "\n\n-- --------------------------------------------------------\n\n"
             . "--\n-- 表的结构 `sys_setting` (新系统键值配置表)\n--\n\n"
             . "CREATE TABLE IF NOT EXISTS `sys_setting` (\n"
@@ -314,7 +315,7 @@ function cleanSqlDumpFile(string $filePath, array $tablesToDrop, array $columnsT
             . "('author_name', 'Brian'),\n"
             . "('author_bio', '热爱技术与折腾'),\n"
             . "('admin_username', 'admin'),\n"
-            . "('admin_password', 'admin123')\n"
+            . "('admin_password', '{$defaultPassHash}')\n"
             . "ON DUPLICATE KEY UPDATE `value`=VALUES(`value`);\n";
         $content .= $sysSettingSql;
     }

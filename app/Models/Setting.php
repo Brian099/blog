@@ -31,7 +31,7 @@ class Setting {
                     'author_name' => 'Brian',
                     'author_bio' => '热爱技术与折腾',
                     'admin_username' => 'admin',
-                    'admin_password' => 'admin123'
+                    'admin_password' => password_hash('admin123', PASSWORD_DEFAULT)
                 ];
                 foreach ($defaults as $k => $v) {
                     if ($driver === 'sqlite') {
