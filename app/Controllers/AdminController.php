@@ -561,4 +561,36 @@ class AdminController {
         $settings = Setting::getAll();
         require VIEW_PATH . '/admin/settings.php';
     }
+
+    /**
+     * 内容排版与自适应优化工具页
+     */
+    public function contentCleaner(): void {
+        $this->requireAuth();
+        $scan = Post::scanResponsiveIssues();
+        require VIEW_PATH . '/admin/content-cleaner.php';
+    }
+
+    /**
+     * 内容自适应清洗 API（执行扫描或批量修复）
+     */
+    public function apiCleanResponsive(): void {
+        $this->requireAuth();
+        header('Content-Type: application/json; charset=utf-8');
+
+        $action = $_POST['action'] ?? $_GET['action'] ?? 'scan';
+
+        try {
+            if ($action === 'clean') {
+                $res = Post::batchCleanResponsive();
+                echo json_encode(['success' => true, 'data' => $res]);
+            } else {
+                $scan = Post::scanResponsiveIssues();
+                echo json_encode(['success' => true, 'data' => $scan]);
+            }
+        } catch (\Throwable $e) {
+            echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+        }
+    }
 }
+

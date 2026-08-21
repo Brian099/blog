@@ -262,12 +262,13 @@ class Post {
     }
 
     /**
-     * 保存文章（新增/更新）
+     * 保存文章（新增/更新，自动进行自适应排版优化与尺寸清洗）
      */
     public static function save(array $data, ?int $id = null): int {
         $time = time();
         $title = trim($data['title'] ?? '无标题');
-        $content = $data['content'] ?? '';
+        $rawContent = $data['content'] ?? '';
+        $content = self::cleanResponsiveHtml($rawContent);
         $intro = $data['intro'] ?? Helpers::getSnippet($content, 180);
         $cateId = (int)($data['cate_id'] ?? 0);
         $status = (int)($data['status'] ?? 0);
@@ -277,7 +278,7 @@ class Post {
 
         if ($id && $id > 0) {
             // 获取原有 meta
-            $old = Database::queryOne("SELECT log_Meta FROM zbp_post WHERE log_ID = ?", [$id]);
+            $old = Database::fetchOne("SELECT log_Meta FROM zbp_post WHERE log_ID = ?", [$id]);
             $meta = [];
             if (!empty($old['log_Meta'])) {
                 $decoded = json_decode($old['log_Meta'], true);
@@ -313,5 +314,179 @@ class Post {
      */
     public static function delete(int $id): bool {
         return Database::execute("DELETE FROM zbp_post WHERE log_ID = ?", [$id]) > 0;
+    }
+
+    /**
+     * 清洗 HTML 中的图片/表格长宽限制、禁止换行属性与定宽 Style 限制
+     */
+    public static function cleanResponsiveHtml(string $html): string {
+        if (empty($html)) return $html;
+
+        // 1. 处理 <img> 标签：移除 width, height 属性，并清理 style 中的 width / height / max-width 限制
+        $html = preg_replace_callback('/<img\b([^>]*)>/is', function($m) {
+            $attrs = $m[1];
+            $attrs = preg_replace('/\s*(?:width|height)\s*=\s*(["\']).*?\1/is', '', $attrs);
+            $attrs = preg_replace('/\s*(?:width|height)\s*=\s*[\d%pxpt]+/is', '', $attrs);
+            
+            $attrs = preg_replace_callback('/style\s*=\s*(["\'])(.*?)\1/is', function($sm) {
+                $quote = $sm[1];
+                $style = $sm[2];
+                $style = preg_replace('/\b(?:min-|max-)?(?:width|height)\s*:\s*[^;]+;?/is', '', $style);
+                $style = trim(preg_replace('/;{2,}/', ';', trim($style)), "; \t\n\r\0\x0B");
+                return $style ? " style={$quote}{$style}{$quote}" : '';
+            }, $attrs);
+            
+            return '<img' . $attrs . '>';
+        }, $html);
+
+        // 2. 处理 <table>, <tr>, <td>, <th>, <col>, <colgroup>, <tbody>, <thead> 等表格相关标签
+        $html = preg_replace_callback('/<(table|tr|td|th|col|colgroup|tbody|thead)\b([^>]*)>/is', function($m) {
+            $tag = $m[1];
+            $attrs = $m[2];
+            
+            // 移除 HTML width, height, nowrap 属性
+            $attrs = preg_replace('/\s*(?:width|height)\s*=\s*(["\']).*?\1/is', '', $attrs);
+            $attrs = preg_replace('/\s*(?:width|height)\s*=\s*[\d%pxpt]+/is', '', $attrs);
+            $attrs = preg_replace('/\s+nowrap(?:\s*=\s*(["\']).*?\1)?/is', '', $attrs);
+            
+            // 清理 style 属性中的 width/height/white-space/nowrap 等限制
+            $attrs = preg_replace_callback('/style\s*=\s*(["\'])(.*?)\1/is', function($sm) {
+                $quote = $sm[1];
+                $style = $sm[2];
+                $style = preg_replace('/\b(?:min-|max-)?(?:width|height)\s*:\s*[^;]+;?/is', '', $style);
+                $style = preg_replace('/\bwhite-space\s*:\s*nowrap\s*;?/is', '', $style);
+                $style = preg_replace('/\bword-break\s*:\s*keep-all\s*;?/is', '', $style);
+                $style = trim(preg_replace('/;{2,}/', ';', trim($style)), "; \t\n\r\0\x0B");
+                return $style ? " style={$quote}{$style}{$quote}" : '';
+            }, $attrs);
+            
+            return "<{$tag}" . $attrs . '>';
+        }, $html);
+
+        // 3. 处理 <div>, <p>, <span>, <section>, <article>, <figure> 中的固定宽度与 white-space: nowrap
+        $html = preg_replace_callback('/<(div|p|span|section|article|figure)\b([^>]*)>/is', function($m) {
+            $tag = $m[1];
+            $attrs = $m[2];
+            
+            $attrs = preg_replace('/\s*(?:width|height)\s*=\s*(["\']).*?\1/is', '', $attrs);
+            $attrs = preg_replace('/\s*(?:width|height)\s*=\s*[\d%pxpt]+/is', '', $attrs);
+
+            $attrs = preg_replace_callback('/style\s*=\s*(["\'])(.*?)\1/is', function($sm) {
+                $quote = $sm[1];
+                $style = $sm[2];
+                $style = preg_replace('/\b(?:min-|max-)?width\s*:\s*\d+[^;]*;?/is', '', $style);
+                $style = preg_replace('/\bwhite-space\s*:\s*nowrap\s*;?/is', '', $style);
+                $style = trim(preg_replace('/;{2,}/', ';', trim($style)), "; \t\n\r\0\x0B");
+                return $style ? " style={$quote}{$style}{$quote}" : '';
+            }, $attrs);
+
+            return "<{$tag}" . $attrs . '>';
+        }, $html);
+
+        // 4. 清理空 style 属性与残留无效空格
+        $html = preg_replace('/\s*style\s*=\s*(["\'])\s*\1/is', '', $html);
+
+        return $html;
+    }
+
+    /**
+     * 扫描全站文章中的自适应排版限制问题（用于后台预览与诊断）
+     */
+    public static function scanResponsiveIssues(): array {
+        $rows = Database::query("SELECT log_ID, log_Title, log_Content, log_PostTime FROM zbp_post WHERE log_Type = 0 ORDER BY log_ID ASC");
+        
+        $total = count($rows);
+        $issuesCount = 0;
+        $issueList = [];
+
+        foreach ($rows as $row) {
+            $content = $row['log_Content'] ?? '';
+            $cleaned = self::cleanResponsiveHtml($content);
+            
+            if ($cleaned !== $content) {
+                $issuesCount++;
+                $issues = [];
+                if (preg_match('/<img[^>]+(?:width|height)=/i', $content) || preg_match('/<img[^>]+style=[\'"][^\'"]*?(?:width|height)/i', $content)) {
+                    $issues[] = '图片定宽/高';
+                }
+                if (preg_match('/<(?:table|td|th|col|colgroup)[^>]+(?:width|height|nowrap)/i', $content) || preg_match('/<(?:table|td|th)[^>]+style=[\'"][^\'"]*?(?:width|height|white-space)/i', $content)) {
+                    $issues[] = '表格定宽/禁换行';
+                }
+                if (preg_match('/<(?:div|p|span)[^>]+style=[\'"][^\'"]*?(?:width:\s*\d+|white-space:\s*nowrap)/i', $content)) {
+                    $issues[] = '容器定宽/禁止换行';
+                }
+                if (empty($issues)) {
+                    $issues[] = '其他尺寸与样式限制';
+                }
+
+                $issueList[] = [
+                    'id' => (int)$row['log_ID'],
+                    'title' => $row['log_Title'],
+                    'date' => Helpers::formatDate((int)$row['log_PostTime'], 'Y-m-d'),
+                    'issues' => $issues,
+                    'diff_bytes' => strlen($content) - strlen($cleaned)
+                ];
+            }
+        }
+
+        return [
+            'total_scanned' => $total,
+            'issues_found' => $issuesCount,
+            'clean_rate' => $total > 0 ? round((($total - $issuesCount) / $total) * 100, 1) : 100,
+            'items' => $issueList
+        ];
+    }
+
+    /**
+     * 批量执行全站文章自适应排版清洗与修复
+     */
+    public static function batchCleanResponsive(): array {
+        $rows = Database::query("SELECT log_ID, log_Title, log_Content, log_Intro FROM zbp_post WHERE log_Type = 0 ORDER BY log_ID ASC");
+        
+        $total = count($rows);
+        $updatedCount = 0;
+        $totalBytesSaved = 0;
+        $fixedList = [];
+
+        Database::beginTransaction();
+        try {
+            foreach ($rows as $row) {
+                $id = (int)$row['log_ID'];
+                $content = $row['log_Content'] ?? '';
+                $intro = $row['log_Intro'] ?? '';
+
+                $cleanedContent = self::cleanResponsiveHtml($content);
+                $cleanedIntro = self::cleanResponsiveHtml($intro);
+
+                if ($cleanedContent !== $content || $cleanedIntro !== $intro) {
+                    $diff = (strlen($content) - strlen($cleanedContent)) + (strlen($intro) - strlen($cleanedIntro));
+                    $totalBytesSaved += $diff;
+                    $updatedCount++;
+
+                    Database::execute(
+                        "UPDATE zbp_post SET log_Content = ?, log_Intro = ? WHERE log_ID = ?",
+                        [$cleanedContent, $cleanedIntro, $id]
+                    );
+
+                    $fixedList[] = [
+                        'id' => $id,
+                        'title' => $row['log_Title'],
+                        'bytes_saved' => $diff
+                    ];
+                }
+            }
+            Database::commit();
+        } catch (\Exception $e) {
+            Database::rollBack();
+            throw $e;
+        }
+
+        return [
+            'success' => true,
+            'total_scanned' => $total,
+            'updated_count' => $updatedCount,
+            'bytes_saved' => $totalBytesSaved,
+            'fixed_list' => $fixedList
+        ];
     }
 }

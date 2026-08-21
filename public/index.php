@@ -166,6 +166,14 @@ try {
             (new AdminController())->settings();
             break;
 
+        case '/admin/content-cleaner':
+            (new AdminController())->contentCleaner();
+            break;
+
+        case '/admin/content-cleaner/action':
+            (new AdminController())->apiCleanResponsive();
+            break;
+
         default:
             http_response_code(404);
             echo "<h1>404 Not Found</h1><p><a href='/'>返回首页</a></p>";

@@ -168,8 +168,13 @@ try {
         }
     }
 
-    // 执行空间压缩与碎片整理
-    echo "\n5. 释放物理磁盘空间并重建索引...\n";
+    // 5. 清洗全站文章的定宽/高与禁止换行等排版限制
+    echo "\n5. 批量清洗文章中的图片/表格长宽限制与 nowrap 禁止换行...\n";
+    $cleanRes = \App\Models\Post::batchCleanResponsive();
+    echo "   ✅ 自适应排版清洗完成！共扫描 {$cleanRes['total_scanned']} 篇，修复 {$cleanRes['updated_count']} 篇文章，清理冗余限制 " . formatSize($cleanRes['bytes_saved']) . "\n";
+
+    // 6. 执行空间压缩与碎片整理
+    echo "\n6. 释放物理磁盘空间并重建索引...\n";
     if ($driver === 'sqlite') {
         $beforeSize = file_exists($config['sqlite']['path']) ? filesize($config['sqlite']['path']) : 0;
         $pdo->exec("VACUUM;");
@@ -183,7 +188,7 @@ try {
         }
         echo "\n";
     } else {
-        foreach (['zbp_post', 'zbp_category', 'zbp_tag', 'zbp_upload'] as $tbl) {
+        foreach (['zbp_post', 'zbp_category', 'zbp_tag', 'zbp_upload', 'zbp_comment', 'sys_setting'] as $tbl) {
             if (tableExists($pdo, $driver, $tbl)) {
                 $pdo->exec("OPTIMIZE TABLE `{$tbl}`");
             }
@@ -192,10 +197,11 @@ try {
     }
 
     echo "\n===============================================================\n";
-    echo "🎉 数据库瘦身清理完毕！\n";
+    echo "🎉 数据库瘦身与自适应排版优化完毕！\n";
     echo "   - 共删除无用数据表: {$droppedTablesCount} 个\n";
     echo "   - 共剔除冗余数据字段: {$droppedColsCount} 个\n";
-    echo "   - 核心文章、附件、分类、标签均保持 100% 完整与快速运转！\n";
+    echo "   - 修复自适应文章篇数: {$cleanRes['updated_count']} 篇\n";
+    echo "   - 核心文章、附件、分类、标签均保持 100% 完整与快速自适应运转！\n";
     echo "===============================================================\n";
 
 } catch (\Exception $e) {
