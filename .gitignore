@@ -5,3 +5,5 @@ package.json
 .idea/
 *.log
 *.bak
+c_option.php
+zb_users/c_option.php
