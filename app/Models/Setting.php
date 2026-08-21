@@ -26,10 +26,28 @@ class Setting {
     }
 
     public static function set(string $key, string $value): void {
-        Database::execute(
-            "INSERT INTO sys_setting (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
-            [$key, $value]
-        );
+        $config = require APP_PATH . '/Config.php';
+        $driver = $config['db_driver'] ?? 'sqlite';
+
+        // 确保 sys_setting 表存在
+        try {
+            if ($driver === 'sqlite') {
+                Database::execute("CREATE TABLE IF NOT EXISTS sys_setting (key TEXT PRIMARY KEY, value TEXT NOT NULL DEFAULT '')");
+                Database::execute(
+                    "INSERT INTO sys_setting (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+                    [$key, $value]
+                );
+            } else {
+                Database::execute("CREATE TABLE IF NOT EXISTS `sys_setting` (`key` varchar(191) NOT NULL, `value` longtext NOT NULL, PRIMARY KEY (`key`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+                Database::execute(
+                    "INSERT INTO `sys_setting` (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)",
+                    [$key, $value]
+                );
+            }
+        } catch (\Exception $e) {
+            // ignore if table exists
+        }
+
         self::$cache[$key] = $value;
     }
 
