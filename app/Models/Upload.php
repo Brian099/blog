@@ -7,30 +7,57 @@ use App\Helpers;
 class Upload {
     /**
      * 全文扫描所有文章，生成附件被引用的倒排索引映射
-     * 返回格式：[ 'filename.jpg' => [ ['id' => 1, 'title' => '文章标题'], ... ], ... ]
+     * 返回格式：[ 'filename.jpg' => [ ['post_id' => 1, 'title' => '文章标题'], ... ], ... ]
      */
     public static function buildReferenceMap(): array {
         $posts = Database::query("SELECT log_ID, log_Title, log_Content, log_Intro FROM zbp_post");
         $refMap = [];
+        $exts = 'jpg|jpeg|png|gif|webp|svg|bmp|pdf|zip|rar|7z|tar|gz|xlsx|xls|doc|docx|ppt|pptx|txt|sh|py|mp4|mp3';
 
         foreach ($posts as $post) {
             $postId = (int)$post['log_ID'];
             $postTitle = $post['log_Title'];
             $combined = $post['log_Content'] . ' ' . $post['log_Intro'];
 
-            // 匹配所有 uploads 或 zb_users/upload 下的文件名，如 202104121618199643524877.jpg
-            if (preg_match_all('/([a-zA-Z0-9_\-\.]+\.(?:jpg|jpeg|png|gif|webp|svg|pdf|zip|rar|7z|xlsx|xls|doc|docx|sh|py|mp4))/i', $combined, $matches)) {
-                $filenames = array_unique($matches[1]);
-                foreach ($filenames as $fn) {
-                    $fnLower = strtolower($fn);
-                    if (!isset($refMap[$fnLower])) {
-                        $refMap[$fnLower] = [];
+            $found = [];
+
+            // 1. 匹配 HTML/Markdown/CSS 各种属性中的实际 URL（src/href/data-src/url/![]()）
+            if (preg_match_all('/(?:src|href|data-src)=["\']([^"\']+)["\']|\!\[[^\]]*\]\(([^)\s]+)\)|url\(["\']?([^"\')]+)["\']?\)/i', $combined, $matches)) {
+                $allUrls = array_merge($matches[1], $matches[2], $matches[3]);
+                foreach ($allUrls as $url) {
+                    if (!$url) continue;
+                    // 清理 Z-Blog 标签变量如 {#ZC_BLOG_HOST#} 及 URL 参数
+                    $cleanUrl = preg_replace('/\{#[^#]+#\}/', '', $url);
+                    $path = parse_url($cleanUrl, PHP_URL_PATH) ?? $cleanUrl;
+                    $fn = strtolower(basename($path));
+                    if ($fn && preg_match('/\.(' . $exts . ')$/i', $fn)) {
+                        $found[$fn] = true;
                     }
-                    $refMap[$fnLower][] = [
-                        'post_id' => $postId,
-                        'title' => $postTitle
-                    ];
                 }
+            }
+
+            // 2. 匹配标准 uploads 相对路径格式，如 /upload/2021/04/202104121618199643524877.jpg
+            if (preg_match_all('/(?:uploads?\/[0-9\/]*)([a-zA-Z0-9_\-\.]+\.(?:' . $exts . '))/i', $combined, $m2)) {
+                foreach ($m2[1] as $fn) {
+                    $found[strtolower($fn)] = true;
+                }
+            }
+
+            // 3. 匹配 14+ 位时间戳命名的 Z-Blog 标准存储文件名（如 202104121618199643524877.png）
+            if (preg_match_all('/(20\d{12,}[a-zA-Z0-9_\-]*\.(?:' . $exts . '))/i', $combined, $m3)) {
+                foreach ($m3[1] as $fn) {
+                    $found[strtolower($fn)] = true;
+                }
+            }
+
+            foreach (array_keys($found) as $fnLower) {
+                if (!isset($refMap[$fnLower])) {
+                    $refMap[$fnLower] = [];
+                }
+                $refMap[$fnLower][] = [
+                    'post_id' => $postId,
+                    'title' => $postTitle
+                ];
             }
         }
 
@@ -54,19 +81,11 @@ class Upload {
         $whereSql = implode(" AND ", $where);
         $allUploads = Database::query("SELECT * FROM zbp_upload WHERE $whereSql ORDER BY ul_PostTime DESC, ul_ID DESC", $params);
 
-        // 附加引用信息
+        // 附加引用信息（仅以实际存储文件名 ul_Name 为准）
         $processed = [];
         foreach ($allUploads as $item) {
             $fn = strtolower($item['ul_Name']);
-            $sourceFn = strtolower($item['ul_SourceName']);
-            
-            $refs = [];
-            if (isset($refMap[$fn])) {
-                $refs = $refMap[$fn];
-            } elseif (isset($refMap[$sourceFn])) {
-                $refs = $refMap[$sourceFn];
-            }
-
+            $refs = $refMap[$fn] ?? [];
             $refCount = count($refs);
             $isOrphan = ($refCount === 0);
 
@@ -75,7 +94,6 @@ class Upload {
             }
 
             // 计算相对 URL 与缩略图
-            // 检查文件名是否包含年月，如 20210412xxxx -> 2021/04
             $year = date('Y', $item['ul_PostTime'] > 0 ? $item['ul_PostTime'] : time());
             $month = date('m', $item['ul_PostTime'] > 0 ? $item['ul_PostTime'] : time());
             if (preg_match('/^(\d{4})(\d{2})/', $item['ul_Name'], $m)) {
@@ -131,8 +149,7 @@ class Upload {
             $totalBytes += $size;
 
             $fn = strtolower($item['ul_Name']);
-            $sourceFn = strtolower($item['ul_SourceName']);
-            $isRef = isset($refMap[$fn]) || isset($refMap[$sourceFn]);
+            $isRef = isset($refMap[$fn]);
             if (!$isRef) {
                 $orphanCount++;
                 $orphanBytes += $size;
@@ -200,8 +217,7 @@ class Upload {
         $orphanIds = [];
         foreach ($all as $item) {
             $fn = strtolower($item['ul_Name']);
-            $sourceFn = strtolower($item['ul_SourceName']);
-            if (!isset($refMap[$fn]) && !isset($refMap[$sourceFn])) {
+            if (!isset($refMap[$fn])) {
                 $orphanIds[] = (int)$item['ul_ID'];
             }
         }

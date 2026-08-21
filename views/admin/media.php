@@ -80,22 +80,22 @@ ob_start();
 <div class="card">
     <!-- Toolbar -->
     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
-        <form method="GET" action="/admin/media" style="display: flex; gap: 10px; align-items: center;">
+        <form method="GET" action="/admin/media" style="display: flex; gap: 10px; align-items: center; flex-shrink: 0;">
             <input type="hidden" name="tab" value="<?= htmlspecialchars($tab) ?>">
-            <input type="text" name="q" class="form-input" style="max-width: 260px;" placeholder="搜索文件名..." value="<?= htmlspecialchars($_GET['q'] ?? '') ?>">
+            <input type="text" name="q" class="form-input" style="width: 200px; max-width: 240px;" placeholder="搜索文件名..." value="<?= htmlspecialchars($_GET['q'] ?? '') ?>">
             
-            <label style="display: flex; align-items: center; gap: 6px; font-size: 0.88rem; cursor: pointer; user-select: none;">
+            <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.88rem; cursor: pointer; user-select: none; white-space: nowrap; flex-shrink: 0;">
                 <input type="checkbox" name="orphan" value="1" <?= !empty($_GET['orphan']) ? 'checked' : '' ?> onchange="this.form.submit()">
-                <span style="font-weight: 600; color: #dc2626;">仅显示未引用的孤立文件</span>
+                <span style="font-weight: 600; color: #dc2626; white-space: nowrap;">仅显示未引用的孤立文件</span>
             </label>
 
-            <button type="submit" class="btn btn-outline">查询</button>
+            <button type="submit" class="btn btn-outline" style="white-space: nowrap; flex-shrink: 0;">查询</button>
             <?php if (!empty($_GET['q']) || !empty($_GET['orphan'])): ?>
-                <a href="/admin/media?tab=<?= htmlspecialchars($tab) ?>" class="btn btn-outline" style="color: #64748b;">重置</a>
+                <a href="/admin/media?tab=<?= htmlspecialchars($tab) ?>" class="btn btn-outline" style="color: #64748b; white-space: nowrap; flex-shrink: 0;">重置</a>
             <?php endif; ?>
         </form>
 
-        <div style="display: flex; gap: 10px; align-items: center;">
+        <div style="display: flex; gap: 10px; align-items: center; flex-shrink: 0;">
             <?php if ($tab === 'disk'): ?>
                 <button id="disk-batch-delete-btn" class="btn btn-danger btn-sm" disabled>
                     批量删除选中磁盘文件 (0)
@@ -228,22 +228,6 @@ async function deleteSingleDiskFile(relPath) {
     const form = new FormData();
     form.append('paths', relPath);
     const res = await fetch('/admin/media/disk-delete-batch', { method: 'POST', body: form });
-    const data = await res.json();
-    if (data.success) {
-        window.location.reload();
-    } else {
-        alert('删除失败');
-    }
-}
-</script>
-
-<?php
-$content = ob_get_clean();
-require VIEW_PATH . '/admin/layout.php';
-?>turn;
-    const form = new FormData();
-    form.append('ids', id);
-    const res = await fetch('/admin/media/delete-batch', { method: 'POST', body: form });
     const data = await res.json();
     if (data.success) {
         window.location.reload();
