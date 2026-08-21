@@ -64,9 +64,25 @@ INSERT INTO `zbp_category` (`cate_ID`, `cate_Name`, `cate_Order`, `cate_Type`, `
 -- --------------------------------------------------------
 
 --
+-- 表的结构 `zbp_comment`
 --
 
-
+CREATE TABLE `zbp_comment` (
+  `comm_ID` int NOT NULL,
+  `comm_LogID` int NOT NULL DEFAULT '0',
+  `comm_IsChecking` tinyint NOT NULL DEFAULT '0',
+  `comm_RootID` int NOT NULL DEFAULT '0',
+  `comm_ParentID` int NOT NULL DEFAULT '0',
+  `comm_AuthorID` int NOT NULL DEFAULT '0',
+  `comm_Name` varchar(250) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `comm_Email` varchar(250) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `comm_HomePage` varchar(250) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `comm_Content` mediumtext COLLATE utf8mb4_general_ci NOT NULL,
+  `comm_PostTime` int NOT NULL DEFAULT '0',
+  `comm_IP` varchar(250) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `comm_Agent` mediumtext COLLATE utf8mb4_general_ci NOT NULL,
+  `comm_Meta` longtext COLLATE utf8mb4_general_ci NOT NULL
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -5072,7 +5088,10 @@ ALTER TABLE `zbp_category`
 --
 -- 表的索引 `zbp_comment`
 --
-
+ALTER TABLE `zbp_comment`
+  ADD PRIMARY KEY (`comm_ID`),
+  ADD KEY `zbp_comm_LRI` (`comm_LogID`,`comm_RootID`,`comm_IsChecking`),
+  ADD KEY `zbp_comm_IsChecking` (`comm_IsChecking`);
 
 --
 -- 表的索引 `zbp_config`
@@ -5146,7 +5165,8 @@ ALTER TABLE `zbp_category`
 --
 -- 使用表AUTO_INCREMENT `zbp_comment`
 --
-
+ALTER TABLE `zbp_comment`
+  MODIFY `comm_ID` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- 使用表AUTO_INCREMENT `zbp_config`

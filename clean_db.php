@@ -28,10 +28,9 @@ spl_autoload_register(function ($class) {
 
 use App\Database;
 
-// 定义待清理的无用表
+// 定义待清理的无用表（保留核心表与评论表 zbp_comment）
 $tablesToDrop = [
     'zbp_member',
-    'zbp_comment',
     'zbp_module',
     'zbp_config',
     'zbp_sf_praise_count',
@@ -45,7 +44,6 @@ $tablesToDrop = [
 $columnsToDrop = [
     'zbp_post' => [
         'log_IsLock',
-        'log_CommNums',
         'log_Template'
     ],
     'zbp_category' => [
@@ -293,12 +291,12 @@ function cleanSqlDumpFile(string $filePath, array $tablesToDrop, array $columnsT
     echo "原始文件大小: " . formatSize($origLen) . "\n";
 
     // 1. 删除无用表及其 INSERT 和 ALTER 语句
-    echo "正在剔除 9 张冗余表及其所有数据记录...\n";
+    echo "正在剔除 " . count($tablesToDrop) . " 张冗余表及其所有数据记录...\n";
     foreach ($tablesToDrop as $tbl) {
-        $content = preg_replace('/CREATE TABLE [`"]?' . preg_quote($tbl, '/') . '[`"]?\s*\(.*?\)\s*ENGINE=.*?;/is', '', $content);
-        $content = preg_replace('/INSERT INTO [`"]?' . preg_quote($tbl, '/') . '[`"]?\s*.*?;/is', '', $content);
-        $content = preg_replace('/ALTER TABLE [`"]?' . preg_quote($tbl, '/') . '[`"]?\s*.*?;/is', '', $content);
-        $content = preg_replace('/--\s*表[的结构|的数据]*\s*[`"]?' . preg_quote($tbl, '/') . '[`"]?.*?--/is', '--', $content);
+        $content = preg_replace('/CREATE TABLE [`"]?' . preg_quote($tbl, '/') . '[`"]?\s*\([^;]*?\)\s*ENGINE=[^;]*?;/is', '', $content);
+        $content = preg_replace('/INSERT INTO [`"]?' . preg_quote($tbl, '/') . '[`"]?\s*[^;]*?;/is', '', $content);
+        $content = preg_replace('/ALTER TABLE [`"]?' . preg_quote($tbl, '/') . '[`"]?\s*[^;]*?;/is', '', $content);
+        $content = preg_replace('/--\s*(?:表的结构|表的数据)\s*[`"]?' . preg_quote($tbl, '/') . '[`"]?[^\r\n]*\r?\n/is', '', $content);
     }
 
     $outPath = pathinfo($filePath, PATHINFO_DIRNAME) . '/' . pathinfo($filePath, PATHINFO_FILENAME) . '_cleaned.sql';
