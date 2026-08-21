@@ -30,9 +30,11 @@ ob_start();
                         <td style="font-weight: 600;"><?= htmlspecialchars($cat['cate_Name']) ?></td>
                         <td><?= htmlspecialchars($cat['cate_Alias'] ?: '-') ?></td>
                         <td><?= $cat['cate_Count'] ?> 篇</td>
-                        <td>
-                            <button onclick="editCat(<?= htmlspecialchars(json_encode($cat)) ?>)" class="btn btn-outline btn-sm">改</button>
-                            <button onclick="deleteCat(<?= $cat['cate_ID'] ?>)" class="btn btn-danger btn-sm">删</button>
+                        <td style="text-align: right;">
+                            <div class="action-btn-group">
+                                <button onclick="editCat(<?= htmlspecialchars(json_encode($cat)) ?>)" class="btn btn-outline btn-sm">编辑</button>
+                                <button onclick="deleteCat(<?= $cat['cate_ID'] ?>)" class="btn btn-danger btn-sm">删除</button>
+                            </div>
                         </td>
                     </tr>
                 <?php endforeach; ?>
@@ -53,7 +55,7 @@ ob_start();
                     <th>标签名</th>
                     <th>别名</th>
                     <th>关联数</th>
-                    <th width="90">操作</th>
+                    <th width="110" style="text-align: right;">操作</th>
                 </tr>
             </thead>
             <tbody>
@@ -62,9 +64,11 @@ ob_start();
                         <td style="font-weight: 600;">#<?= htmlspecialchars($tag['tag_Name']) ?></td>
                         <td><?= htmlspecialchars($tag['tag_Alias'] ?: '-') ?></td>
                         <td><?= $tag['tag_Count'] ?> 次</td>
-                        <td>
-                            <button onclick="editTag(<?= htmlspecialchars(json_encode($tag)) ?>)" class="btn btn-outline btn-sm">改</button>
-                            <button onclick="deleteTag(<?= $tag['tag_ID'] ?>)" class="btn btn-danger btn-sm">删</button>
+                        <td style="text-align: right;">
+                            <div class="action-btn-group">
+                                <button onclick="editTag(<?= htmlspecialchars(json_encode($tag)) ?>)" class="btn btn-outline btn-sm">编辑</button>
+                                <button onclick="deleteTag(<?= $tag['tag_ID'] ?>)" class="btn btn-danger btn-sm">删除</button>
+                            </div>
                         </td>
                     </tr>
                 <?php endforeach; ?>

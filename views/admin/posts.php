@@ -33,28 +33,31 @@ ob_start();
                 <th width="45%">标题</th>
                 <th>分类</th>
                 <th>状态</th>
-                <th>发布时间</th>
+                <th>发布日期</th>
                 <th>阅读量</th>
-                <th width="140">操作</th>
+                <th width="150" style="text-align: right; padding-right: 18px;">操作</th>
             </tr>
         </thead>
         <tbody>
             <?php if (empty($data['items'])): ?>
                 <tr>
-                    <td colspan="6" style="text-align: center; padding: 40px; color: #94a3b8;">暂无符合条件的文章</td>
+                    <td colspan="7" style="text-align: center; padding: 40px; color: #94a3b8;">暂无文章记录</td>
                 </tr>
             <?php else: ?>
                 <?php foreach ($data['items'] as $item): ?>
                     <tr>
                         <td>
-                            <?php if (!empty($item['log_IsTop'])): ?>
-                                <span style="background: #ef4444; color: #fff; padding: 1px 5px; border-radius: 3px; font-size: 0.75rem; font-weight: 600; margin-right: 4px;">置顶</span>
-                            <?php endif; ?>
-                            <a href="/admin/posts/edit?id=<?= $item['log_ID'] ?>" style="font-weight: 600; color: #0f172a;">
-                                <?= htmlspecialchars($item['log_Title']) ?>
-                            </a>
+                            <div style="font-weight: 600; color: #0f172a; display: flex; align-items: center; gap: 6px;">
+                                <?php if (!empty($item['log_IsTop'])): ?>
+                                    <span style="font-size: 0.7rem; background: #eff6ff; color: #2563eb; padding: 1px 4px; border-radius: 3px;">置顶</span>
+                                <?php endif; ?>
+                                <a href="/admin/posts/edit?id=<?= $item['log_ID'] ?>" style="color: inherit;"><?= htmlspecialchars($item['log_Title']) ?></a>
+                            </div>
+                            <div style="font-size: 0.78rem; color: #94a3b8; margin-top: 2px;">
+                                <?= htmlspecialchars(\App\Helpers::getSnippet($item['log_Content'], 60)) ?>
+                            </div>
                         </td>
-                        <td><?= htmlspecialchars($item['cate_Name'] ?? '未分类') ?></td>
+                        <td><?= htmlspecialchars($item['cate_Name'] ?: '未分类') ?></td>
                         <td>
                             <?php if ((int)$item['log_Status'] === 0): ?>
                                 <span style="color: #10b981; font-weight: 500;">公开</span>
@@ -64,10 +67,12 @@ ob_start();
                         </td>
                         <td><?= \App\Helpers::formatDate((int)$item['log_PostTime'], 'Y-m-d') ?></td>
                         <td><?= number_format((int)$item['log_ViewNums']) ?></td>
-                        <td>
-                            <a href="/admin/posts/edit?id=<?= $item['log_ID'] ?>" class="btn btn-outline btn-sm">编辑</a>
-                            <a href="/?id=<?= $item['log_ID'] ?>" target="_blank" class="btn btn-outline btn-sm">预览</a>
-                            <button onclick="deletePost(<?= $item['log_ID'] ?>)" class="btn btn-danger btn-sm" style="padding: 3px 6px;">删</button>
+                        <td style="text-align: right; padding-right: 18px;">
+                            <div class="action-btn-group">
+                                <a href="/admin/posts/edit?id=<?= $item['log_ID'] ?>" class="btn btn-outline btn-sm">编辑</a>
+                                <a href="/?id=<?= $item['log_ID'] ?>" target="_blank" class="btn btn-outline btn-sm">预览</a>
+                                <button onclick="deletePost(<?= $item['log_ID'] ?>)" class="btn btn-danger btn-sm">删除</button>
+                            </div>
                         </td>
                     </tr>
                 <?php endforeach; ?>

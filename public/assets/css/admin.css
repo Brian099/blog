@@ -276,8 +276,20 @@ a {
 
 .data-table th, .data-table td {
   padding: 12px 14px;
-  text-align: left;
   border-bottom: 1px solid var(--admin-border);
+  font-size: 0.88rem;
+}
+
+.data-table td:last-child, .data-table th:last-child {
+  white-space: nowrap !important;
+}
+
+.action-btn-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  flex-wrap: nowrap;
 }
 
 .data-table th {
