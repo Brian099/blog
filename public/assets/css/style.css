@@ -545,7 +545,8 @@ button, input {
 }
 
 /* Images & Zoom */
-.article-body img {
+.article-body img.zoomable-img,
+.article-body img:not(.filetype-icon):not([src*="filetype"]):not([src*="icon_"]) {
   max-width: 100% !important;
   height: auto !important;
   border-radius: var(--radius-md);
@@ -556,6 +557,30 @@ button, input {
   cursor: zoom-in;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   object-fit: contain;
+}
+
+/* Inline Attachment & Filetype Icons (Always Left-Aligned with Link) */
+.article-body .filetype-icon,
+.article-body img[src*="filetype"],
+.article-body img[src*="icon_"],
+.article-body .ue-upload img {
+  display: inline-block !important;
+  vertical-align: middle !important;
+  margin: 0 4px 0 0 !important;
+  max-height: 18px !important;
+  width: auto !important;
+  box-shadow: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+  cursor: default !important;
+}
+
+.article-body .ue-upload {
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  margin: 0.6em 0 !important;
+  line-height: normal !important;
 }
 
 /* Prevent any wide tables, pre, or elements from overflowing on mobile */
