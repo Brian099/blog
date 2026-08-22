@@ -11,9 +11,9 @@ $siteSubtitle = $siteSettings['site_subtitle'] ?? '';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= isset($currentPost) && $currentPost ? htmlspecialchars($currentPost['title']) . ' - ' : '' ?><?= htmlspecialchars($siteName) ?><?= $siteSubtitle ? ' | ' . htmlspecialchars($siteSubtitle) : '' ?></title>
     <link rel="stylesheet" href="/assets/css/style.css">
-    <!-- Highlight.js for professional code highlighting -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <!-- Highlight.js for professional code highlighting (Localized) -->
+    <link rel="stylesheet" href="/assets/css/highlight.atom-one-dark.min.css">
+    <script src="/assets/js/highlight.min.js"></script>
     <script>window.SITE_NAME = <?= json_encode($siteName) ?>;</script>
 </head>
 <body>
