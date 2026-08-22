@@ -1,6 +1,7 @@
 <?php
 use App\Models\Setting;
 $adminSiteName = Setting::get('site_name', '技术思维棱镜');
+$adminSiteLogo = Setting::get('site_logo', '');
 $currentRoute = $_SERVER['REQUEST_URI'] ?? '/admin';
 ?>
 <!DOCTYPE html>
@@ -17,7 +18,11 @@ $currentRoute = $_SERVER['REQUEST_URI'] ?? '/admin';
     <!-- Left Admin Sidebar -->
     <aside class="admin-sidebar">
         <div class="admin-brand">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="#38bdf8"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            <?php if (!empty($adminSiteLogo)): ?>
+                <img src="<?= htmlspecialchars($adminSiteLogo) ?>" alt="Logo" style="max-height: 24px; width: auto; object-fit: contain; border-radius: 4px; flex-shrink: 0;">
+            <?php else: ?>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="#38bdf8"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            <?php endif; ?>
             <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="<?= htmlspecialchars($adminSiteName) ?>"><?= htmlspecialchars($adminSiteName) ?></span>
         </div>
 

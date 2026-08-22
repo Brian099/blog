@@ -3,6 +3,7 @@
 /** @var array $categories */
 $siteName = $siteSettings['site_name'] ?? '技术思维棱镜';
 $siteSubtitle = $siteSettings['site_subtitle'] ?? '';
+$siteLogo = $siteSettings['site_logo'] ?? '';
 ?>
 <!DOCTYPE html>
 <html lang="zh-CN">
@@ -25,7 +26,11 @@ $siteSubtitle = $siteSettings['site_subtitle'] ?? '';
         </button>
 
         <a href="/" class="site-logo" title="<?= htmlspecialchars($siteSubtitle) ?>">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            <?php if (!empty($siteLogo)): ?>
+                <img src="<?= htmlspecialchars($siteLogo) ?>" alt="<?= htmlspecialchars($siteName) ?>" style="max-height: 28px; width: auto; object-fit: contain; border-radius: 4px; vertical-align: middle;">
+            <?php else: ?>
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            <?php endif; ?>
             <span><?= htmlspecialchars($siteName) ?></span>
         </a>
 
