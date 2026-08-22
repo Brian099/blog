@@ -171,7 +171,8 @@ class AdminController {
             'status' => (int)($_POST['status'] ?? 0),
             'is_top' => (int)($_POST['is_top'] ?? 0),
             'tags_raw' => $tagsRaw,
-            'alias' => $_POST['alias'] ?? ''
+            'alias' => $_POST['alias'] ?? '',
+            'password' => trim($_POST['password'] ?? '')
         ];
 
         $savedId = Post::save($saveData, $id);

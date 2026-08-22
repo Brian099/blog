@@ -50,6 +50,8 @@ class Post {
                 $meta = json_decode($row['log_Meta'], true);
                 if (is_array($meta) && !empty($meta['password'])) {
                     $isProtected = true;
+                } elseif (preg_match('/password[:=]([^\s;,]+)/i', (string)$row['log_Meta'], $pm) && !empty($pm[1])) {
+                    $isProtected = true;
                 }
             }
 
@@ -282,10 +284,19 @@ class Post {
             $meta = [];
             if (!empty($old['log_Meta'])) {
                 $decoded = json_decode($old['log_Meta'], true);
-                if (is_array($decoded)) $meta = $decoded;
+                if (is_array($decoded)) {
+                    $meta = $decoded;
+                } elseif (preg_match('/password[:=]([^\s;,]+)/i', (string)$old['log_Meta'], $pm)) {
+                    $meta['password'] = trim($pm[1]);
+                }
             }
             if (isset($data['password'])) {
-                $meta['password'] = trim($data['password']);
+                $pwd = trim($data['password']);
+                if (!empty($pwd)) {
+                    $meta['password'] = $pwd;
+                } else {
+                    unset($meta['password']);
+                }
             }
             $metaJson = !empty($meta) ? json_encode($meta, JSON_UNESCAPED_UNICODE) : '';
 

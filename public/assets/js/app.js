@@ -182,7 +182,7 @@ window.submitPostUnlock = async function(e, postId) {
         const data = await res.json();
 
         if (data.success) {
-            const container = document.getElementById('article-content-container');
+            const container = document.getElementById('article-content-wrapper') || document.getElementById('article-content-container');
             if (container) {
                 container.innerHTML = data.html;
                 if (data.title) document.title = data.title;

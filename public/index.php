@@ -20,6 +20,11 @@ spl_autoload_register(function ($class) {
     }
 });
 
+// Start Session globally if not started
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 // Parse URI path
 $requestUri = $_SERVER['REQUEST_URI'] ?? '/';
 $parsedUrl = parse_url($requestUri);
