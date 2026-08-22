@@ -96,83 +96,85 @@ ob_start();
         <?php endif; ?>
     </div>
 
-    <!-- 模块二：MySQL 一键转 SQLite 便携工具 -->
-    <div class="settings-card">
-        <div style="display: flex; gap: 14px; align-items: flex-start; margin-bottom: 20px;">
-            <div style="width: 40px; height: 40px; border-radius: 8px; background: rgba(245, 158, 11, 0.12); color: #d97706; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line></svg>
+    <!-- 模块二：MySQL 一键转 SQLite 便携工具 (仅在当前使用 MySQL 模式时显示) -->
+    <?php if ($driver !== 'sqlite'): ?>
+        <div class="settings-card">
+            <div style="display: flex; gap: 14px; align-items: flex-start; margin-bottom: 20px;">
+                <div style="width: 40px; height: 40px; border-radius: 8px; background: rgba(245, 158, 11, 0.12); color: #d97706; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line></svg>
+                </div>
+                <div>
+                    <h3 class="settings-card-title" style="margin-bottom: 4px;">🔄 将 MySQL 数据库一键转为 SQLite (blog.db)</h3>
+                    <p class="settings-card-desc">
+                        系统已通过后台身份验证，将<strong>直接自动从现有配置文件（<code>c_option.php</code> / <code>Config.php</code>）中读取 MySQL 连接信息</strong>，无需重复输入。点击下方按钮即可一键提取全部文章、分类、标签、附件与评论，并生成单文件免运维的 <strong><code>data/blog.db</code></strong>。
+                    </p>
+                </div>
             </div>
-            <div>
-                <h3 class="settings-card-title" style="margin-bottom: 4px;">🔄 将 MySQL 数据库一键转为 SQLite (blog.db)</h3>
-                <p class="settings-card-desc">
-                    系统已通过后台身份验证，将<strong>直接自动从现有配置文件（<code>c_option.php</code> / <code>Config.php</code>）中读取 MySQL 连接信息</strong>，无需重复输入。点击下方按钮即可一键提取全部文章、分类、标签、附件与评论，并生成单文件免运维的 <strong><code>data/blog.db</code></strong>。
-                </p>
+
+            <!-- 自动识别到的配置预览卡片 -->
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px 20px; margin-bottom: 20px;">
+                <div style="font-size: 0.85rem; font-weight: 700; color: #334155; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                    <span>已自动识别的源 MySQL 数据库配置：</span>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; font-size: 0.85rem;">
+                    <div><span style="color: #64748b;">服务器地址:</span> <strong style="color: #0f172a;"><?= htmlspecialchars($mysqlConfig['host'] ?? '127.0.0.1') ?>:<?= (int)($mysqlConfig['port'] ?? 3306) ?></strong></div>
+                    <div><span style="color: #64748b;">数据库名称:</span> <strong style="color: #0f172a;"><?= htmlspecialchars($mysqlConfig['dbname'] ?: '未设置(将自动探测)') ?></strong></div>
+                    <div><span style="color: #64748b;">登录用户名:</span> <strong style="color: #0f172a;"><?= htmlspecialchars($mysqlConfig['username'] ?? 'root') ?></strong></div>
+                    <div><span style="color: #64748b;">配置文件源:</span> <strong style="color: #0f172a;"><?= htmlspecialchars($config['c_option_source'] ? basename($config['c_option_source']) : 'app/Config.php') ?></strong></div>
+                </div>
             </div>
+
+            <form id="convert-form" onsubmit="handleConvert(event)">
+                <!-- 高级自定义连接折叠区 (选填) -->
+                <div style="margin-bottom: 18px;">
+                    <a href="javascript:void(0)" onclick="toggleAdvancedDb()" style="font-size: 0.85rem; color: #2563eb; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                        <span id="adv-arrow">▶</span> <span>高级选项：自定义指定其他 MySQL 目标连接 (通常无需修改)</span>
+                    </a>
+                </div>
+
+                <div id="advanced-db-fields" style="display: none; background: #fff; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">MySQL 服务器地址 (Host)</label>
+                            <input type="text" id="m_host" name="host" class="form-control" value="<?= htmlspecialchars($mysqlConfig['host'] ?? '127.0.0.1') ?>">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">端口 (Port)</label>
+                            <input type="number" id="m_port" name="port" class="form-control" value="<?= (int)($mysqlConfig['port'] ?? 3306) ?>">
+                        </div>
+                    </div>
+
+                    <div class="form-grid" style="margin-top: 14px;">
+                        <div class="form-group">
+                            <label class="form-label">MySQL 数据库名称 (Database Name)</label>
+                            <input type="text" id="m_dbname" name="dbname" class="form-control" value="<?= htmlspecialchars($mysqlConfig['dbname'] ?? '') ?>" placeholder="例如: zblog 或 giraff">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">MySQL 用户名 (Username)</label>
+                            <input type="text" id="m_username" name="username" class="form-control" value="<?= htmlspecialchars($mysqlConfig['username'] ?? 'root') ?>">
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 14px;">
+                        <label class="form-label">MySQL 密码 (Password)</label>
+                        <input type="password" id="m_password" name="password" class="form-control" value="<?= htmlspecialchars($mysqlConfig['password'] ?? '') ?>" placeholder="留空则使用默认配置密码">
+                    </div>
+                </div>
+
+                <div id="convert-result-box" style="display: none; margin-top: 16px; padding: 14px 18px; border-radius: 8px; font-size: 0.9rem;"></div>
+
+                <div style="margin-top: 20px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                    <button type="submit" id="btn-start-convert" class="btn btn-primary" style="background: #f59e0b; border-color: #d97706; font-weight: 600; padding: 10px 20px;">
+                        <span>⚡ 立即从当前配置的 MySQL 转换并生成 SQLite (blog.db)</span>
+                    </button>
+                    <button type="button" onclick="testMysqlConnection()" id="btn-test-mysql" class="btn btn-outline">
+                        <span>🔌 测试当前 MySQL 连通性</span>
+                    </button>
+                </div>
+            </form>
         </div>
-
-        <!-- 自动识别到的配置预览卡片 -->
-        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px 20px; margin-bottom: 20px;">
-            <div style="font-size: 0.85rem; font-weight: 700; color: #334155; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-                <span>已自动识别的源 MySQL 数据库配置：</span>
-            </div>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; font-size: 0.85rem;">
-                <div><span style="color: #64748b;">服务器地址:</span> <strong style="color: #0f172a;"><?= htmlspecialchars($mysqlConfig['host'] ?? '127.0.0.1') ?>:<?= (int)($mysqlConfig['port'] ?? 3306) ?></strong></div>
-                <div><span style="color: #64748b;">数据库名称:</span> <strong style="color: #0f172a;"><?= htmlspecialchars($mysqlConfig['dbname'] ?: '未设置(将自动探测)') ?></strong></div>
-                <div><span style="color: #64748b;">登录用户名:</span> <strong style="color: #0f172a;"><?= htmlspecialchars($mysqlConfig['username'] ?? 'root') ?></strong></div>
-                <div><span style="color: #64748b;">配置文件源:</span> <strong style="color: #0f172a;"><?= htmlspecialchars($config['c_option_source'] ? basename($config['c_option_source']) : 'app/Config.php') ?></strong></div>
-            </div>
-        </div>
-
-        <form id="convert-form" onsubmit="handleConvert(event)">
-            <!-- 高级自定义连接折叠区 (选填) -->
-            <div style="margin-bottom: 18px;">
-                <a href="javascript:void(0)" onclick="toggleAdvancedDb()" style="font-size: 0.85rem; color: #2563eb; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
-                    <span id="adv-arrow">▶</span> <span>高级选项：自定义指定其他 MySQL 目标连接 (通常无需修改)</span>
-                </a>
-            </div>
-
-            <div id="advanced-db-fields" style="display: none; background: #fff; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label class="form-label">MySQL 服务器地址 (Host)</label>
-                        <input type="text" id="m_host" name="host" class="form-control" value="<?= htmlspecialchars($mysqlConfig['host'] ?? '127.0.0.1') ?>">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">端口 (Port)</label>
-                        <input type="number" id="m_port" name="port" class="form-control" value="<?= (int)($mysqlConfig['port'] ?? 3306) ?>">
-                    </div>
-                </div>
-
-                <div class="form-grid" style="margin-top: 14px;">
-                    <div class="form-group">
-                        <label class="form-label">MySQL 数据库名称 (Database Name)</label>
-                        <input type="text" id="m_dbname" name="dbname" class="form-control" value="<?= htmlspecialchars($mysqlConfig['dbname'] ?? '') ?>" placeholder="例如: zblog 或 giraff">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">MySQL 用户名 (Username)</label>
-                        <input type="text" id="m_username" name="username" class="form-control" value="<?= htmlspecialchars($mysqlConfig['username'] ?? 'root') ?>">
-                    </div>
-                </div>
-
-                <div class="form-group" style="margin-top: 14px;">
-                    <label class="form-label">MySQL 密码 (Password)</label>
-                    <input type="password" id="m_password" name="password" class="form-control" value="<?= htmlspecialchars($mysqlConfig['password'] ?? '') ?>" placeholder="留空则使用默认配置密码">
-                </div>
-            </div>
-
-            <div id="convert-result-box" style="display: none; margin-top: 16px; padding: 14px 18px; border-radius: 8px; font-size: 0.9rem;"></div>
-
-            <div style="margin-top: 20px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-                <button type="submit" id="btn-start-convert" class="btn btn-primary" style="background: #f59e0b; border-color: #d97706; font-weight: 600; padding: 10px 20px;">
-                    <span>⚡ 立即从当前配置的 MySQL 转换并生成 SQLite (blog.db)</span>
-                </button>
-                <button type="button" onclick="testMysqlConnection()" id="btn-test-mysql" class="btn btn-outline">
-                    <span>🔌 测试当前 MySQL 连通性</span>
-                </button>
-            </div>
-        </form>
-    </div>
+    <?php endif; ?>
 </div>
 
 <script>
