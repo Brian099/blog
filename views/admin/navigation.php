@@ -59,16 +59,16 @@ if (!empty($settings['friend_links'])) {
                 </div>
             </div>
             <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-                <button type="button" onclick="loadCategoriesToNav()" class="btn btn-outline" style="padding: 7px 12px; font-size: 0.84rem;">
+                <button type="button" onclick="loadCategoriesToNav()" class="btn btn-outline" style="height: 36px; padding: 0 14px; font-size: 0.85rem; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box;">
                     ⚡ 导入全部分类
                 </button>
-                <button type="button" onclick="resetDefaultNav()" class="btn btn-outline" style="padding: 7px 12px; font-size: 0.84rem; color: #ef4444;" title="恢复系统默认导航">
+                <button type="button" onclick="resetDefaultNav()" class="btn btn-outline" style="height: 36px; padding: 0 14px; font-size: 0.85rem; color: #ef4444; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box;" title="恢复系统默认导航">
                     ↺ 恢复默认
                 </button>
-                <button type="button" onclick="addNavRow()" class="btn btn-outline" style="padding: 7px 14px; font-size: 0.84rem;">
+                <button type="button" onclick="addNavRow()" class="btn btn-outline" style="height: 36px; padding: 0 14px; font-size: 0.85rem; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box;">
                     + 新增导航按钮
                 </button>
-                <button type="submit" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 6px; padding: 7px 18px; font-weight: 600; font-size: 0.86rem; box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2);">
+                <button type="submit" class="btn btn-primary" style="height: 36px; padding: 0 16px; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px; box-sizing: border-box; box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2);">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
                     <span>保存顶栏导航</span>
                 </button>
@@ -114,10 +114,10 @@ if (!empty($settings['friend_links'])) {
                 </div>
             </div>
             <div style="display: flex; gap: 8px; align-items: center;">
-                <button type="button" onclick="addFriendLinkRow()" class="btn btn-outline" style="padding: 7px 14px; font-size: 0.84rem;">
+                <button type="button" onclick="addFriendLinkRow()" class="btn btn-outline" style="height: 36px; padding: 0 14px; font-size: 0.85rem; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box;">
                     + 新增友情链接
                 </button>
-                <button type="submit" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 6px; padding: 7px 18px; font-weight: 600; font-size: 0.86rem; box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2);">
+                <button type="submit" class="btn btn-primary" style="height: 36px; padding: 0 16px; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px; box-sizing: border-box; box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2);">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
                     <span>保存友情链接</span>
                 </button>
