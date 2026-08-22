@@ -261,7 +261,7 @@ function initAttachmentIcons() {
         const iconName = supportedExts[ext];
         const icon = document.createElement('img');
         icon.className = 'filetype-icon';
-        icon.src = `/users/filetype/${iconName}.png`;
+        icon.src = `/users/filetype/${iconName}.svg`;
         icon.alt = ext.toUpperCase();
         a.insertBefore(icon, a.firstChild);
     });
