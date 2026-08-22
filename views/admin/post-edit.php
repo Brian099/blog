@@ -164,17 +164,17 @@ async function handleEditorAttachmentUpload(e) {
 window.ueEditor = null;
 document.addEventListener('DOMContentLoaded', () => {
     if (window.UE) {
-        // 点击 UEditor 工具栏的附件图标时直接调起本地文件快速上传
-        UE.plugin.register('attachment-custom', function() {
-            return {
-                commands: {
-                    'attachment': {
-                        execCommand: function() {
-                            triggerEditorAttachmentUpload();
-                        }
-                    }
+        // 自定义 UEditor 工具栏的「附件」按钮，点击时直接打开系统文件选择器进行快速上传与插入
+        UE.registerUI('attachment', function(editor, uiName) {
+            var btn = new UE.ui.Button({
+                name: uiName,
+                title: '上传并插入附件',
+                cssRules: 'background-position: -620px -40px;',
+                onclick: function() {
+                    triggerEditorAttachmentUpload();
                 }
-            };
+            });
+            return btn;
         });
 
         window.ueEditor = UE.getEditor('post-content-editor', {

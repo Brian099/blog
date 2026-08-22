@@ -78,6 +78,9 @@ if (strpos($path, '/assets/') === 0 || strpos($path, '/users/') === 0 || strpos(
             $mimes = [
                 'css' => 'text/css; charset=utf-8',
                 'js' => 'application/javascript; charset=utf-8',
+                'html' => 'text/html; charset=utf-8',
+                'htm' => 'text/html; charset=utf-8',
+                'json' => 'application/json; charset=utf-8',
                 'png' => 'image/png',
                 'jpg' => 'image/jpeg',
                 'jpeg' => 'image/jpeg',
