@@ -348,14 +348,20 @@ class AdminController {
                 "catcherAllowFiles" => [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp"],
                 "fileActionName" => "uploadfile",
                 "fileFieldName" => "upfile",
-                "fileMaxSize" => 51200000,
-                "fileAllowFiles" => [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".zip", ".rar", ".7z", ".tar", ".gz", ".doc", ".docx", ".xls", ".xlsx", ".pdf", ".txt"]
+                "fileMaxSize" => 204800000,
+                "fileAllowFiles" => [
+                    ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp", ".svg",
+                    ".zip", ".rar", ".7z", ".tar", ".gz", ".bz2", ".zba",
+                    ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".pdf", ".txt", ".md",
+                    ".exe", ".bat", ".cmd", ".apk", ".msu", ".iso", ".dmg", ".pat",
+                    ".py", ".sh", ".sql", ".php", ".js", ".html", ".css", ".json"
+                ]
             ]);
             return;
         }
 
         // 1. 标准文件上传 (拖拽/文件选择)
-        if (in_array($action, ['uploadimage', 'uploadfile'])) {
+        if (in_array($action, ['uploadimage', 'uploadfile', 'uploadvideo'])) {
             $fileField = 'upfile';
             if (!empty($_FILES[$fileField])) {
                 $res = Upload::handleUpload($_FILES[$fileField]);
@@ -448,10 +454,9 @@ class AdminController {
             $base64Data = base64_decode(str_replace($result[1], '', $base64Data));
         } else {
             $base64Data = base64_decode($base64Data);
-            $type = 'png';
         }
 
-        if (!$base64Data) return null;
+        if (empty($base64Data)) return null;
 
         $year = date('Y');
         $month = date('m');
@@ -534,7 +539,7 @@ class AdminController {
     }
 
     /**
-     * 图片上传接口（用于编辑器直接拖拽/粘贴）
+     * 图片/文件上传接口（用于通用异步上传）
      */
     public function upload(): void {
         $this->requireAuth();

@@ -33,9 +33,15 @@ ob_start();
                 </div>
 
                 <div class="form-group">
-                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
-                        <label class="form-label" style="margin-bottom: 0;">正文内容 (UEditor 经典编辑器)</label>
-                        <span style="font-size: 0.78rem; color: #64748b;">Z-Blog 原版同款体验，支持多图上传、代码高亮、表格与排版</span>
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <label class="form-label" style="margin-bottom: 0;">正文内容 (UEditor 经典编辑器)</label>
+                            <button type="button" class="btn btn-sm btn-secondary" onclick="triggerEditorAttachmentUpload()" style="display: inline-flex; align-items: center; gap: 4px; font-size: 0.8rem; padding: 4px 10px; border-radius: var(--radius-sm); cursor: pointer;">
+                                📎 上传并插入附件
+                            </button>
+                            <input type="file" id="quick-attachment-file" style="display: none;" onchange="handleEditorAttachmentUpload(event)">
+                        </div>
+                        <span style="font-size: 0.78rem; color: #64748b;">支持直接粘贴/拖拽图片，或点击上方「上传并插入附件」</span>
                     </div>
                     <!-- UEditor Container -->
                     <script id="post-content-editor" name="content" type="text/plain" style="width:100%; height:500px;"><?= $post['content_raw'] ?? '' ?></script>
@@ -118,6 +124,42 @@ ob_start();
 </form>
 
 <script>
+function triggerEditorAttachmentUpload() {
+    document.getElementById('quick-attachment-file').click();
+}
+
+async function handleEditorAttachmentUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const btn = document.querySelector('button[onclick="triggerEditorAttachmentUpload()"]');
+    const origText = btn ? btn.innerHTML : '';
+    if (btn) btn.innerHTML = '⏳ 上传中...';
+
+    try {
+        const res = await fetch('/admin/upload', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await res.json();
+        if (data.success && window.ueEditor) {
+            const fileName = file.name;
+            const linkHtml = `<p><a href="${data.url}" title="${fileName}">${fileName}</a></p>`;
+            window.ueEditor.execCommand('inserthtml', linkHtml);
+        } else {
+            alert('上传失败: ' + (data.error || '未知错误'));
+        }
+    } catch (err) {
+        alert('网络请求失败: ' + err.message);
+    } finally {
+        if (btn) btn.innerHTML = origText;
+        e.target.value = '';
+    }
+}
+
 // 初始化 UEditor
 window.ueEditor = null;
 document.addEventListener('DOMContentLoaded', () => {
@@ -141,7 +183,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 'touppercase', 'tolowercase', '|',
                 'link', 'unlink', 'anchor', '|',
                 'imagenone', 'imageleft', 'imageright', 'imagecenter', '|',
-                'simpleupload', 'insertimage', 'insertcode', 'pagebreak', 'template', 'background', '|',
+                'simpleupload', 'insertimage', 'attachment', 'insertvideo', 'insertcode', 'pagebreak', 'template', 'background', '|',
                 'horizontal', 'date', 'time', 'spechars', '|',
                 'inserttable', 'deletetable', 'insertparagraphbeforetable', 'insertrow', 'deleterow', 'insertcol', 'deletecol', 'mergecells', 'mergeright', 'mergedown', 'splittorows', 'splittocols', 'splittocells', '|',
                 'preview', 'searchreplace', 'help'
