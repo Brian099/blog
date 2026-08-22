@@ -400,13 +400,6 @@ button, input {
   max-width: var(--content-max-width);
 }
 
-.article-bottom-spacer {
-  height: 32px;
-  width: 100%;
-  clear: both;
-  display: block;
-}
-
 /* Article Header */
 .article-header {
   margin-bottom: 32px;
@@ -724,6 +717,42 @@ button, input {
   text-overflow: ellipsis;
 }
 
+/* Article Site Footer (Branded, Semantic & Natural Spacing) */
+.article-site-footer {
+  margin-top: 56px;
+  padding: 28px 0 48px;
+  border-top: 1px dashed var(--border-color);
+  text-align: center;
+  color: var(--text-light);
+  font-size: 0.82rem;
+  line-height: 1.6;
+}
+
+.article-site-footer .footer-meta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.article-site-footer .footer-meta a {
+  color: var(--text-light);
+  text-decoration: none;
+  transition: var(--transition);
+}
+
+.article-site-footer .footer-meta a:hover {
+  color: var(--primary);
+}
+
+.article-site-footer .footer-quote {
+  margin-top: 6px;
+  font-size: 0.76rem;
+  color: var(--text-light);
+  opacity: 0.85;
+}
+
 /* ==========================================================================
    Search Modal
    ========================================================================== */
@@ -969,7 +998,9 @@ mark {
     margin-bottom: 0;
   }
 
-  .article-bottom-spacer {
-    height: 36px;
+  .article-site-footer {
+    margin-top: 40px;
+    padding: 24px 0 44px;
+    font-size: 0.78rem;
   }
 }

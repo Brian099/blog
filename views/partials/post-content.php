@@ -111,8 +111,23 @@ $siteSettings = $siteSettings ?? \App\Models\Setting::getAll();
             </nav>
         <?php endif; ?>
         
-        <!-- Bottom Breathing Room Spacer -->
-        <div class="article-bottom-spacer"></div>
+        <!-- Semantic Article Site Footer -->
+        <footer class="article-site-footer">
+            <div class="footer-meta">
+                <span>© <?= date('Y') ?> <?= htmlspecialchars($siteSettings['site_name'] ?? '技术思维棱镜') ?></span>
+                <span>·</span>
+                <span>Powered by Modern Z-Blog</span>
+                <?php if (!empty($siteSettings['site_icp'])): ?>
+                    <span>·</span>
+                    <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer"><?= htmlspecialchars($siteSettings['site_icp']) ?></a>
+                <?php endif; ?>
+            </div>
+            <?php if (!empty($siteSettings['site_subtitle'])): ?>
+                <div class="footer-quote">
+                    <?= htmlspecialchars($siteSettings['site_subtitle']) ?>
+                </div>
+            <?php endif; ?>
+        </footer>
     </article>
 <?php else: ?>
     <div style="text-align: center; padding: 100px 20px; color: var(--text-light);">
