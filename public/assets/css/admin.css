@@ -180,18 +180,60 @@ a {
 }
 
 .page-title {
-  font-size: 1.4rem;
+  font-size: 1.35rem;
   font-weight: 700;
   color: var(--admin-text);
+  margin: 0;
+}
+
+.page-subtitle {
+  font-size: 0.88rem;
+  color: var(--admin-text-muted);
+  margin-top: 4px;
 }
 
 .card {
   background-color: var(--admin-card);
   border-radius: var(--radius);
   border: 1px solid var(--admin-border);
-  box-shadow: var(--shadow);
-  padding: 20px;
-  margin-bottom: 20px;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
+  padding: 20px 24px;
+  margin-bottom: 24px;
+}
+
+.card-flush {
+  padding: 0;
+  overflow: hidden;
+}
+
+.card-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--admin-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.card-body {
+  padding: 20px 24px;
+}
+
+.card-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--admin-text);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-desc {
+  font-size: 0.85rem;
+  color: var(--admin-text-muted);
+  margin: 4px 0 0 0;
 }
 
 /* Stats Cards */
@@ -206,6 +248,7 @@ a {
   background-color: #fff;
   border-radius: var(--radius);
   border: 1px solid var(--admin-border);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04);
   padding: 20px;
   display: flex;
   align-items: center;

@@ -57,7 +57,7 @@ ob_start();
 </div>
 
 <!-- Feature Explanations Card -->
-<div class="card" style="margin-bottom: 24px; background: linear-gradient(to right, #f8fafc, #f1f5f9); border-left: 4px solid #0284c7;">
+<div class="card" style="margin-bottom: 24px; background: #f8fafc;">
     <h3 style="font-size: 0.95rem; font-weight: 700; color: var(--admin-text); margin-bottom: 8px;">🛠️ 本次清洗与修复将执行以下优化策略：</h3>
     <ul style="margin: 0; padding-left: 20px; font-size: 0.85rem; color: var(--admin-text-muted); line-height: 1.8;">
         <li><strong>图片尺寸智能自适应</strong>：剔除 <code>&lt;img&gt;</code> 标签中固定的 <code>width</code>、<code>height</code> 属性及 <code>style</code> 中的绝对像素尺寸限制，确保手机与高分屏下图片等比自适应缩放；</li>
