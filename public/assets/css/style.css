@@ -390,7 +390,7 @@ button, input {
   flex: 1;
   height: 100%;
   overflow-y: auto;
-  padding: 40px 48px 120px;
+  padding: 40px 48px 24px;
   display: flex;
   justify-content: center;
 }
@@ -398,11 +398,10 @@ button, input {
 .article-container {
   width: 100%;
   max-width: var(--content-max-width);
-  padding-bottom: 60px;
 }
 
 .article-bottom-spacer {
-  height: 100px;
+  height: 32px;
   width: 100%;
   clear: both;
   display: block;
@@ -686,8 +685,8 @@ button, input {
 
 /* Article Navigation (Prev / Next) */
 .article-footer-nav {
-  margin-top: 56px;
-  margin-bottom: 48px;
+  margin-top: 48px;
+  margin-bottom: 0;
   padding-top: 24px;
   border-top: 1px solid var(--border-color);
   display: grid;
@@ -914,8 +913,7 @@ mark {
 
   /* 手机端沉浸阅读正文排版 */
   .article-main {
-    padding: 20px 16px 140px;
-    padding-bottom: max(140px, calc(100px + env(safe-area-inset-bottom)));
+    padding: 20px 16px 0;
     overflow-x: hidden;
   }
 
@@ -966,12 +964,12 @@ mark {
 
   .article-footer-nav {
     grid-template-columns: 1fr;
-    gap: 14px;
-    margin-top: 40px;
-    margin-bottom: 24px;
+    gap: 12px;
+    margin-top: 36px;
+    margin-bottom: 0;
   }
 
   .article-bottom-spacer {
-    height: 120px;
+    height: 36px;
   }
 }
