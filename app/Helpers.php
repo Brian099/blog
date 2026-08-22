@@ -84,6 +84,52 @@ class Helpers {
     }
 
     /**
+     * 将文章内容格式化为后台编辑器可直接渲染的标准 HTML（规整历史宏与相对路径）
+     */
+    public static function normalizeForEditor(string $content): string {
+        $content = str_replace(
+            [
+                '{#ZC_BLOG_HOST#}zb_users/upload/',
+                '{#ZC_BLOG_HOST#}users/upload/',
+                '{#ZC_BLOG_HOST#}upload/',
+                '{#ZC_BLOG_HOST#}zb_system/image/filetype/',
+                '{#ZC_BLOG_HOST#}users/filetype/',
+                '{#ZC_BLOG_HOST#}zb_users/plugin/Neditor/dialogs/attachment/fileTypeImages/',
+                '/zb_users/upload/',
+                '/uploads/',
+                '/zb_system/image/filetype/',
+                'zb_system/image/filetype/',
+                '/zb_users/plugin/Neditor/dialogs/attachment/fileTypeImages/',
+                'zb_users/plugin/Neditor/dialogs/attachment/fileTypeImages/'
+            ],
+            [
+                '/users/upload/',
+                '/users/upload/',
+                '/users/upload/',
+                '/users/filetype/',
+                '/users/filetype/',
+                '/users/filetype/',
+                '/users/upload/',
+                '/users/upload/',
+                '/users/filetype/',
+                '/users/filetype/',
+                '/users/filetype/',
+                '/users/filetype/'
+            ],
+            $content
+        );
+        $content = str_replace('{#ZC_BLOG_HOST#}', '/', $content);
+        
+        // 修复部分转义字符
+        $content = htmlspecialchars_decode($content, ENT_QUOTES);
+        if (strpos($content, '&lt;p&gt;') !== false || strpos($content, '&lt;img') !== false) {
+            $content = htmlspecialchars_decode($content, ENT_QUOTES);
+        }
+
+        return $content;
+    }
+
+    /**
      * 提取第一张图片作为文章封面
      */
     public static function extractCoverImage(string $content): ?string {

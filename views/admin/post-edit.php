@@ -44,7 +44,7 @@ ob_start();
                         <span style="font-size: 0.78rem; color: #64748b;">支持直接粘贴/拖拽图片，或点击上方「上传并插入附件」</span>
                     </div>
                     <!-- UEditor Container -->
-                    <script id="post-content-editor" name="content" type="text/plain" style="width:100%; height:500px;"><?= $post['content_raw'] ?? '' ?></script>
+                    <script id="post-content-editor" name="content" type="text/plain" style="width:100%; height:500px;"><?= isset($post['content_raw']) ? \App\Helpers::normalizeForEditor($post['content_raw']) : '' ?></script>
                 </div>
 
                 <div class="form-group">

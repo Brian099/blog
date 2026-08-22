@@ -32,10 +32,11 @@ $path = rtrim($parsedUrl['path'] ?? '/', '/');
 if (empty($path)) $path = '/';
 
 // 静态资源兜底路由（无论 Nginx 运行目录指向根目录还是 public 目录，均能 100% 正确加载 CSS/JS/图片/附件）
-if (strpos($path, '/assets/') === 0 || strpos($path, '/users/') === 0 || strpos($path, '/uploads/') === 0 || strpos($path, '/zb_users/') === 0 || strpos($path, '/zb_system/') === 0) {
+$cleanStaticPath = str_replace(['%7B#ZC_BLOG_HOST#%7D', '{#ZC_BLOG_HOST#}', '/admin/'], ['', '', '/'], $path);
+if (strpos($cleanStaticPath, '/assets/') === 0 || strpos($cleanStaticPath, '/users/') === 0 || strpos($cleanStaticPath, '/uploads/') === 0 || strpos($cleanStaticPath, '/zb_users/') === 0 || strpos($cleanStaticPath, '/zb_system/') === 0 || strpos($cleanStaticPath, 'upload/') !== false) {
     // 智能文件类型图标映射（将所有历史/现代格式请求统一重定向至 22 个纯 SVG 主题图标）
-    if (strpos($path, 'filetype') !== false || strpos($path, 'fileTypeImages') !== false) {
-        $rawBase = strtolower(pathinfo($path, PATHINFO_FILENAME));
+    if (strpos($cleanStaticPath, 'filetype') !== false || strpos($cleanStaticPath, 'fileTypeImages') !== false) {
+        $rawBase = strtolower(pathinfo($cleanStaticPath, PATHINFO_FILENAME));
         $cleanBase = str_replace('icon_', '', $rawBase);
         $svgMap = [
             'rar' => 'archive', 'zip' => 'archive', '7z' => 'archive', 'tar' => 'archive', 'gz' => 'archive', 'bz2' => 'archive', 'zba' => 'archive',
@@ -62,15 +63,15 @@ if (strpos($path, '/assets/') === 0 || strpos($path, '/users/') === 0 || strpos(
         }
     }
 
-    $rel = ltrim($path, '/');
+    $rel = ltrim($cleanStaticPath, '/');
     $possibleFiles = [
-        PUBLIC_PATH . $path,
-        ROOT_PATH . $path,
+        PUBLIC_PATH . $cleanStaticPath,
+        ROOT_PATH . $cleanStaticPath,
         ROOT_PATH . '/' . $rel,
         ROOT_PATH . '/users/' . str_replace(['zb_users/', 'uploads/'], '', $rel),
         ROOT_PATH . '/users/upload/' . str_replace(['users/upload/', 'zb_users/upload/', 'uploads/'], '', $rel),
         ROOT_PATH . '/users/filetype/' . str_replace(['users/filetype/', 'zb_system/image/filetype/', 'zb_users/plugin/Neditor/dialogs/attachment/fileTypeImages/'], '', $rel),
-        UPLOAD_PATH . str_replace(['/users/upload', '/zb_users/upload', '/uploads'], '', $path)
+        UPLOAD_PATH . str_replace(['/users/upload', '/zb_users/upload', '/uploads'], '', $cleanStaticPath)
     ];
     foreach ($possibleFiles as $file) {
         if (file_exists($file) && is_file($file)) {
