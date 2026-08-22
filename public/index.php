@@ -200,6 +200,30 @@ try {
             (new AdminController())->apiCleanResponsive();
             break;
 
+        case '/admin/backup':
+            (new AdminController())->backup();
+            break;
+
+        case '/admin/backup/create':
+            (new AdminController())->createBackup();
+            break;
+
+        case '/admin/backup/download':
+            (new AdminController())->downloadBackup();
+            break;
+
+        case '/admin/backup/delete':
+            (new AdminController())->deleteBackup();
+            break;
+
+        case '/admin/backup/restore':
+            (new AdminController())->restoreBackup();
+            break;
+
+        case '/admin/backup/convert-mysql-to-sqlite':
+            (new AdminController())->convertMysqlToSqlite();
+            break;
+
         default:
             http_response_code(404);
             echo "<h1>404 Not Found</h1><p><a href='/'>返回首页</a></p>";

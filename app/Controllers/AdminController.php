@@ -586,11 +586,115 @@ class AdminController {
                 echo json_encode(['success' => true, 'data' => $res]);
             } else {
                 $scan = Post::scanResponsiveIssues();
-                echo json_encode(['success' => true, 'data' => $scan]);
-            }
+    /**
+     * 数据备份与转换管理页
+     */
+    public function backup(): void {
+        $this->requireAuth();
+        $config = require APP_PATH . '/Config.php';
+        $driver = $config['db_driver'] ?? 'sqlite';
+        $backups = \App\Models\BackupManager::getBackupList();
+        
+        // 读取已存在的 MySQL 配置（若有）
+        $mysqlConfig = $config['mysql'] ?? [];
+        $sqliteInfo = [
+            'path' => $config['sqlite']['path'] ?? (DATA_PATH . '/blog.db'),
+            'exists' => file_exists($config['sqlite']['path'] ?? (DATA_PATH . '/blog.db')),
+            'size_formatted' => file_exists($config['sqlite']['path'] ?? (DATA_PATH . '/blog.db')) ? \App\Models\BackupManager::formatSize(filesize($config['sqlite']['path'])) : '0 B'
+        ];
+
+        require VIEW_PATH . '/admin/backup.php';
+    }
+
+    /**
+     * 创建备份 API
+     */
+    public function createBackup(): void {
+        $this->requireAuth();
+        header('Content-Type: application/json; charset=utf-8');
+        try {
+            $res = \App\Models\BackupManager::createBackup();
+            echo json_encode($res);
+        } catch (\Throwable $e) {
+            echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * 下载指定备份文件
+     */
+    public function downloadBackup(): void {
+        $this->requireAuth();
+        $file = basename($_GET['file'] ?? '');
+        $path = \App\Models\BackupManager::getBackupDir() . '/' . $file;
+
+        if (empty($file) || !file_exists($path)) {
+            http_response_code(404);
+            die('备份文件不存在');
+        }
+
+        header('Content-Description: File Transfer');
+        header('Content-Type: application/octet-stream');
+        header('Content-Disposition: attachment; filename="' . $file . '"');
+        header('Expires: 0');
+        header('Cache-Control: must-revalidate');
+        header('Pragma: public');
+        header('Content-Length: ' . filesize($path));
+        readfile($path);
+        exit;
+    }
+
+    /**
+     * 删除备份 API
+     */
+    public function deleteBackup(): void {
+        $this->requireAuth();
+        header('Content-Type: application/json; charset=utf-8');
+        try {
+            $file = basename($_POST['file'] ?? '');
+            $res = \App\Models\BackupManager::deleteBackup($file);
+            echo json_encode(['success' => $res, 'message' => $res ? '备份已成功删除' : '删除失败']);
+        } catch (\Throwable $e) {
+            echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * 还原 SQLite 备份 API
+     */
+    public function restoreBackup(): void {
+        $this->requireAuth();
+        header('Content-Type: application/json; charset=utf-8');
+        try {
+            $file = basename($_POST['file'] ?? '');
+            $res = \App\Models\BackupManager::restoreSqliteBackup($file);
+            echo json_encode($res);
+        } catch (\Throwable $e) {
+            echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * MySQL 转 SQLite API
+     */
+    public function convertMysqlToSqlite(): void {
+        $this->requireAuth();
+        header('Content-Type: application/json; charset=utf-8');
+        try {
+            $mysqlConfig = [
+                'host' => trim($_POST['host'] ?? '127.0.0.1'),
+                'port' => (int)($_POST['port'] ?? 3306),
+                'dbname' => trim($_POST['dbname'] ?? ''),
+                'username' => trim($_POST['username'] ?? 'root'),
+                'password' => $_POST['password'] ?? ''
+            ];
+
+            $res = \App\Models\BackupManager::convertMysqlToSqlite($mysqlConfig);
+            echo json_encode($res);
         } catch (\Throwable $e) {
             echo json_encode(['success' => false, 'error' => $e->getMessage()]);
         }
     }
 }
+
 

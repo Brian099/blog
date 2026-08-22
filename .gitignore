@@ -11,3 +11,5 @@ zb_users/upload/
 users/upload/
 uploads/
 old_zblog/
+data/backups/*
+!data/backups/.gitkeep
