@@ -144,7 +144,12 @@ async function triggerScan() {
     btn.innerHTML = '<span>扫描中...</span>';
 
     try {
-        const res = await fetch('/admin/content-cleaner/action?action=scan');
+        const res = await fetch('/admin/content-cleaner/action?action=scan', {
+            headers: { 
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
         const data = await res.json();
         if (data.success) {
             updateUIWithScanResult(data.data);
@@ -171,7 +176,11 @@ async function triggerBatchClean() {
     try {
         const res = await fetch('/admin/content-cleaner/action', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            headers: { 
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
             body: 'action=clean'
         });
         const data = await res.json();

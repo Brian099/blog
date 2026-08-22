@@ -21,6 +21,21 @@ class AdminController {
 
     private function requireAuth(): void {
         if (!$this->checkAuth()) {
+            $uri = $_SERVER['REQUEST_URI'] ?? '';
+            $isJson = (
+                (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false) ||
+                (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') ||
+                strpos($uri, '/action') !== false ||
+                strpos($uri, '/api') !== false ||
+                strpos($uri, '/delete') !== false ||
+                strpos($uri, '/save') !== false ||
+                strpos($uri, '/create') !== false
+            );
+            if ($isJson) {
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode(['success' => false, 'error' => '管理员登录会话已过期，请刷新页面重新登录']);
+                exit;
+            }
             header('Location: /admin/login');
             exit;
         }
