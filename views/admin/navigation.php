@@ -59,17 +59,17 @@ if (!empty($settings['friend_links'])) {
                 </div>
             </div>
             <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-                <button type="button" onclick="loadCategoriesToNav()" class="btn btn-outline" style="height: 36px; padding: 0 14px; font-size: 0.85rem; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box;">
+                <button type="button" onclick="loadCategoriesToNav()" class="btn btn-outline">
                     ⚡ 导入全部分类
                 </button>
-                <button type="button" onclick="resetDefaultNav()" class="btn btn-outline" style="height: 36px; padding: 0 14px; font-size: 0.85rem; color: #ef4444; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box;" title="恢复系统默认导航">
+                <button type="button" onclick="resetDefaultNav()" class="btn btn-outline-danger" title="恢复系统默认导航">
                     ↺ 恢复默认
                 </button>
-                <button type="button" onclick="addNavRow()" class="btn btn-outline" style="height: 36px; padding: 0 14px; font-size: 0.85rem; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box;">
+                <button type="button" onclick="addNavRow()" class="btn btn-outline">
                     + 新增导航按钮
                 </button>
-                <button type="submit" class="btn btn-primary" style="height: 36px; padding: 0 16px; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px; box-sizing: border-box; box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2);">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                <button type="submit" class="btn btn-primary">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
                     <span>保存顶栏导航</span>
                 </button>
             </div>
@@ -114,11 +114,11 @@ if (!empty($settings['friend_links'])) {
                 </div>
             </div>
             <div style="display: flex; gap: 8px; align-items: center;">
-                <button type="button" onclick="addFriendLinkRow()" class="btn btn-outline" style="height: 36px; padding: 0 14px; font-size: 0.85rem; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box;">
+                <button type="button" onclick="addFriendLinkRow()" class="btn btn-outline">
                     + 新增友情链接
                 </button>
-                <button type="submit" class="btn btn-primary" style="height: 36px; padding: 0 16px; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px; box-sizing: border-box; box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2);">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                <button type="submit" class="btn btn-primary">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
                     <span>保存友情链接</span>
                 </button>
             </div>
@@ -180,9 +180,9 @@ function renderNavTable() {
                 </select>
             </td>
             <td style="text-align: right; white-space: nowrap;">
-                <button type="button" class="btn btn-outline" style="padding: 4px 8px; font-size: 0.8rem;" onclick="moveNavRow(${idx}, -1)" ${idx === 0 ? 'disabled' : ''} title="上移">↑</button>
-                <button type="button" class="btn btn-outline" style="padding: 4px 8px; font-size: 0.8rem;" onclick="moveNavRow(${idx}, 1)" ${idx === navList.length - 1 ? 'disabled' : ''} title="下移">↓</button>
-                <button type="button" class="btn btn-outline" style="padding: 4px 8px; font-size: 0.8rem; color: #ef4444;" onclick="deleteNavRow(${idx})" title="删除">✕</button>
+                <button type="button" class="btn btn-outline btn-sm" onclick="moveNavRow(${idx}, -1)" ${idx === 0 ? 'disabled' : ''} title="上移">↑</button>
+                <button type="button" class="btn btn-outline btn-sm" onclick="moveNavRow(${idx}, 1)" ${idx === navList.length - 1 ? 'disabled' : ''} title="下移">↓</button>
+                <button type="button" class="btn btn-outline-danger btn-sm" onclick="deleteNavRow(${idx})" title="删除">✕</button>
             </td>
         </tr>
     `).join('');
@@ -269,9 +269,9 @@ function renderFriendLinksTable() {
                 </select>
             </td>
             <td style="text-align: right; white-space: nowrap;">
-                <button type="button" class="btn btn-outline" style="padding: 4px 8px; font-size: 0.8rem;" onclick="moveFriendLinkRow(${idx}, -1)" ${idx === 0 ? 'disabled' : ''} title="上移">↑</button>
-                <button type="button" class="btn btn-outline" style="padding: 4px 8px; font-size: 0.8rem;" onclick="moveFriendLinkRow(${idx}, 1)" ${idx === friendLinksList.length - 1 ? 'disabled' : ''} title="下移">↓</button>
-                <button type="button" class="btn btn-outline" style="padding: 4px 8px; font-size: 0.8rem; color: #ef4444;" onclick="deleteFriendLinkRow(${idx})" title="删除">✕</button>
+                <button type="button" class="btn btn-outline btn-sm" onclick="moveFriendLinkRow(${idx}, -1)" ${idx === 0 ? 'disabled' : ''} title="上移">↑</button>
+                <button type="button" class="btn btn-outline btn-sm" onclick="moveFriendLinkRow(${idx}, 1)" ${idx === friendLinksList.length - 1 ? 'disabled' : ''} title="下移">↓</button>
+                <button type="button" class="btn btn-outline-danger btn-sm" onclick="deleteFriendLinkRow(${idx})" title="删除">✕</button>
             </td>
         </tr>
     `).join('');

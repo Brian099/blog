@@ -56,13 +56,13 @@ ob_start();
 
                         <!-- 路径与上传控制 -->
                         <div style="flex: 1; min-width: 0;">
-                            <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                            <div style="display: flex; gap: 8px; margin-bottom: 8px; align-items: center;">
                                 <input type="text" id="site_logo_input" name="site_logo" class="form-input" placeholder="Logo 图片 URL 或点击右侧上传" value="<?= htmlspecialchars($settings['site_logo'] ?? '') ?>" oninput="updateLogoPreview(this.value)">
-                                <button type="button" onclick="document.getElementById('logo_file_input').click()" class="btn btn-outline" style="white-space: nowrap; flex-shrink: 0; padding: 0 14px; height: 38px;">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                                <button type="button" onclick="document.getElementById('logo_file_input').click()" class="btn btn-outline form-inline-btn" style="white-space: nowrap; flex-shrink: 0;">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
                                     <span>上传</span>
                                 </button>
-                                <button type="button" onclick="clearLogo()" class="btn btn-outline" style="padding: 0 10px; height: 38px; color: #ef4444;" title="清除 Logo（恢复默认几何图标）">
+                                <button type="button" onclick="clearLogo()" class="btn btn-outline-danger form-inline-btn" title="清除 Logo（恢复默认几何图标）">
                                     ✕
                                 </button>
                             </div>

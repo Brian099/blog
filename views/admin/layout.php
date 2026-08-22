@@ -10,7 +10,7 @@ $currentRoute = $_SERVER['REQUEST_URI'] ?? '/admin';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $pageTitle ?? '管理后台' ?> - <?= htmlspecialchars($adminSiteName) ?></title>
-    <link rel="stylesheet" href="/assets/css/admin.css">
+    <link rel="stylesheet" href="/assets/css/admin.css?v=<?= file_exists(APP_PATH . '/../public/assets/css/admin.css') ? filemtime(APP_PATH . '/../public/assets/css/admin.css') : time() ?>">
 </head>
 <body>
 

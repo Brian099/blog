@@ -12,7 +12,7 @@ ob_start();
     <div class="card">
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
             <h3 style="font-size: 1.1rem; font-weight: 700;">分类列表 (<?= count($categories) ?>)</h3>
-            <button onclick="showCatModal()" class="btn btn-primary btn-sm">+ 新建分类</button>
+            <button onclick="showCatModal()" class="btn btn-primary">+ 新建分类</button>
         </div>
 
         <table class="data-table">
@@ -46,7 +46,7 @@ ob_start();
     <div class="card">
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
             <h3 style="font-size: 1.1rem; font-weight: 700;">标签列表 (<?= count($tags) ?>)</h3>
-            <button onclick="showTagModal()" class="btn btn-primary btn-sm">+ 新建标签</button>
+            <button onclick="showTagModal()" class="btn btn-primary">+ 新建标签</button>
         </div>
 
         <table class="data-table">

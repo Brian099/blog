@@ -278,42 +278,107 @@ a {
   justify-content: center;
 }
 
-/* Buttons */
+/* ==========================================================================
+   3-Tier Admin Button Hierarchy:
+   1. Tier 1: 卡片外全局主按钮 (最大) -> .btn-lg, .page-title-row .btn (Height: 40px)
+   2. Tier 2: 卡片上操作按钮 (中等) -> .btn, .btn-md (Height: 34px)
+   3. Tier 3: 表单行/表格行内按钮 (更小) -> .btn-sm, .table td .btn, .form-inline-btn (Height: 28px)
+   ========================================================================== */
 .btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  padding: 8px 16px;
-  border-radius: var(--radius);
-  font-size: 0.88rem;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 6px;
+  font-size: 0.84rem;
   font-weight: 500;
   cursor: pointer;
   border: 1px solid transparent;
+  box-sizing: border-box;
+  white-space: nowrap;
+  line-height: 1;
+  text-decoration: none;
   transition: all 0.15s ease;
+  vertical-align: middle;
 }
 
+/* Tier 1: 卡片外页面级按钮 (最大) */
+.btn-lg,
+.page-title-row .btn {
+  height: 40px !important;
+  padding: 0 20px !important;
+  font-size: 0.92rem !important;
+  font-weight: 600 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
+}
+
+/* Tier 2: 卡片上操作按钮 (中等 - 默认已在 .btn 中设置 height: 34px) */
+.btn-md {
+  height: 34px !important;
+  padding: 0 14px !important;
+  font-size: 0.84rem !important;
+}
+
+/* Tier 3: 表单行上 / 表格行内按钮 (更小) */
+.btn-sm,
+.table td .btn,
+.form-inline-btn {
+  height: 28px !important;
+  padding: 0 8px !important;
+  font-size: 0.78rem !important;
+  font-weight: 500 !important;
+  border-radius: 4px !important;
+  gap: 4px !important;
+}
+
+.table td .btn {
+  height: 26px !important;
+  padding: 0 7px !important;
+  font-size: 0.76rem !important;
+}
+
+/* Button Variants */
 .btn-primary {
   background-color: var(--admin-primary);
-  color: #fff;
+  color: #fff !important;
+  border-color: var(--admin-primary);
 }
-.btn-primary:hover { background-color: var(--admin-primary-hover); }
+.btn-primary:hover {
+  background-color: var(--admin-primary-hover);
+  border-color: var(--admin-primary-hover);
+}
 
 .btn-danger {
   background-color: var(--admin-danger);
-  color: #fff;
+  color: #fff !important;
+  border-color: var(--admin-danger);
 }
-.btn-danger:hover { background-color: var(--admin-danger-hover); }
+.btn-danger:hover {
+  background-color: var(--admin-danger-hover);
+  border-color: var(--admin-danger-hover);
+}
 
 .btn-outline {
-  background-color: transparent;
+  background-color: #fff;
   border-color: var(--admin-border);
-  color: var(--admin-text);
+  color: var(--admin-text) !important;
 }
-.btn-outline:hover { background-color: #f1f5f9; }
+.btn-outline:hover {
+  background-color: #f8fafc;
+  border-color: #cbd5e1;
+}
 
-.btn-sm {
-  padding: 4px 10px;
-  font-size: 0.8rem;
+.btn-outline-danger {
+  background-color: transparent;
+  border-color: #fca5a5;
+  color: #ef4444 !important;
+}
+.btn-outline-danger:hover {
+  background-color: #fef2f2;
+  border-color: #ef4444;
 }
 
 /* Forms & Tables */
