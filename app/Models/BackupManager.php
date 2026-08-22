@@ -88,13 +88,23 @@ class BackupManager {
             $pdo = Database::getConn();
             $targetFile = $backupDir . "/backup_mysql_{$dateStr}.sql";
             $sqlContent = self::dumpMysqlToSql($pdo);
-            file_put_contents($targetFile, $sqlContent);
+
+            if (empty($sqlContent) || strlen($sqlContent) < 50) {
+                throw new Exception("MySQL 数据转储生成失败或内容为空");
+            }
+
+            $written = file_put_contents($targetFile, $sqlContent);
+            if ($written === false || !file_exists($targetFile) || filesize($targetFile) === 0) {
+                throw new Exception("写入 MySQL 备份文件失败，请检查 data/backups/ 目录写权限");
+            }
+
+            $fileSize = filesize($targetFile);
 
             return [
                 'success' => true,
                 'filename' => basename($targetFile),
-                'size' => filesize($targetFile),
-                'size_formatted' => self::formatSize(filesize($targetFile)),
+                'size' => $fileSize,
+                'size_formatted' => self::formatSize($fileSize),
                 'message' => 'MySQL 数据库 SQL 转储备份成功！'
             ];
         }
@@ -299,6 +309,12 @@ class BackupManager {
         // 4. 开始高速事务迁移数据
         $sqlitePdo->beginTransaction();
 
+        $allMysqlTables = $mysqlPdo->query("SHOW TABLES")->fetchAll(PDO::FETCH_COLUMN);
+        $tablesMap = [];
+        foreach ($allMysqlTables as $t) {
+            $tablesMap[strtolower($t)] = $t;
+        }
+
         $stats = [
             'categories' => 0,
             'tags' => 0,
@@ -309,8 +325,9 @@ class BackupManager {
         ];
 
         // 4.1 迁移分类
-        if (self::tableExistsMysql($mysqlPdo, 'zbp_category')) {
-            $stmt = $mysqlPdo->query("SELECT cate_ID, cate_Name, cate_Order, cate_Count, cate_Alias FROM zbp_category");
+        if (isset($tablesMap['zbp_category'])) {
+            $realTbl = $tablesMap['zbp_category'];
+            $stmt = $mysqlPdo->query("SELECT cate_ID, cate_Name, cate_Order, cate_Count, cate_Alias FROM `{$realTbl}`");
             $ins = $sqlitePdo->prepare("INSERT INTO zbp_category (cate_ID, cate_Name, cate_Order, cate_Count, cate_Alias) VALUES (?, ?, ?, ?, ?)");
             while ($row = $stmt->fetch()) {
                 $ins->execute([
@@ -325,8 +342,9 @@ class BackupManager {
         }
 
         // 4.2 迁移标签
-        if (self::tableExistsMysql($mysqlPdo, 'zbp_tag')) {
-            $stmt = $mysqlPdo->query("SELECT tag_ID, tag_Name, tag_Count, tag_Alias FROM zbp_tag");
+        if (isset($tablesMap['zbp_tag'])) {
+            $realTbl = $tablesMap['zbp_tag'];
+            $stmt = $mysqlPdo->query("SELECT tag_ID, tag_Name, tag_Count, tag_Alias FROM `{$realTbl}`");
             $ins = $sqlitePdo->prepare("INSERT INTO zbp_tag (tag_ID, tag_Name, tag_Count, tag_Alias) VALUES (?, ?, ?, ?)");
             while ($row = $stmt->fetch()) {
                 $ins->execute([
@@ -340,8 +358,9 @@ class BackupManager {
         }
 
         // 4.3 迁移文章（同步执行路径规范化与去冗余）
-        if (self::tableExistsMysql($mysqlPdo, 'zbp_post')) {
-            $stmt = $mysqlPdo->query("SELECT * FROM zbp_post");
+        if (isset($tablesMap['zbp_post'])) {
+            $realTbl = $tablesMap['zbp_post'];
+            $stmt = $mysqlPdo->query("SELECT * FROM `{$realTbl}`");
             $ins = $sqlitePdo->prepare("INSERT INTO zbp_post (
                 log_ID, log_CateID, log_AuthorID, log_Tag, log_Status, log_Type, log_Alias, log_IsTop, log_Order,
                 log_Title, log_Intro, log_Content, log_PostTime, log_CommNums, log_ViewNums, log_Meta, log_CreateTime, log_UpdateTime
@@ -388,8 +407,9 @@ class BackupManager {
         }
 
         // 4.4 迁移附件记录
-        if (self::tableExistsMysql($mysqlPdo, 'zbp_upload')) {
-            $stmt = $mysqlPdo->query("SELECT * FROM zbp_upload");
+        if (isset($tablesMap['zbp_upload'])) {
+            $realTbl = $tablesMap['zbp_upload'];
+            $stmt = $mysqlPdo->query("SELECT * FROM `{$realTbl}`");
             $ins = $sqlitePdo->prepare("INSERT INTO zbp_upload (
                 ul_ID, ul_AuthorID, ul_Size, ul_Name, ul_SourceName, ul_MimeType, ul_PostTime, ul_DownNums, ul_LogID, ul_Intro, ul_Meta
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
@@ -412,8 +432,9 @@ class BackupManager {
         }
 
         // 4.5 迁移评论（若存在）
-        if (self::tableExistsMysql($mysqlPdo, 'zbp_comment')) {
-            $stmt = $mysqlPdo->query("SELECT * FROM zbp_comment");
+        if (isset($tablesMap['zbp_comment'])) {
+            $realTbl = $tablesMap['zbp_comment'];
+            $stmt = $mysqlPdo->query("SELECT * FROM `{$realTbl}`");
             $ins = $sqlitePdo->prepare("INSERT INTO zbp_comment (
                 comm_ID, comm_LogID, comm_AuthorID, comm_Name, comm_Content, comm_Email, comm_HomePage,
                 comm_PostTime, comm_IP, comm_Agent, comm_ParentID, comm_RootID, comm_IsChecking, comm_Meta
@@ -440,8 +461,9 @@ class BackupManager {
         }
 
         // 4.6 迁移系统设置 sys_setting（若存在）
-        if (self::tableExistsMysql($mysqlPdo, 'sys_setting')) {
-            $stmt = $mysqlPdo->query("SELECT `key`, `value` FROM `sys_setting`");
+        if (isset($tablesMap['sys_setting'])) {
+            $realTbl = $tablesMap['sys_setting'];
+            $stmt = $mysqlPdo->query("SELECT `key`, `value` FROM `{$realTbl}`");
             $ins = $sqlitePdo->prepare("INSERT OR REPLACE INTO sys_setting (key, value) VALUES (?, ?)");
             while ($row = $stmt->fetch()) {
                 $ins->execute([$row['key'], $row['value'] ?? '']);
@@ -492,8 +514,7 @@ class BackupManager {
      */
     private static function tableExistsMysql(PDO $pdo, string $table): bool {
         try {
-            $stmt = $pdo->prepare("SHOW TABLES LIKE ?");
-            $stmt->execute([$table]);
+            $stmt = $pdo->query("SHOW TABLES LIKE " . $pdo->quote($table));
             return (bool)$stmt->fetch();
         } catch (Exception $e) {
             return false;
@@ -501,37 +522,48 @@ class BackupManager {
     }
 
     /**
-     * 辅助函数：导出 MySQL 为标准 SQL 转储
+     * 辅助函数：导出 MySQL 为标准 SQL 转储（动态扫描全部数据表，高兼容性导出）
      */
     private static function dumpMysqlToSql(PDO $pdo): string {
-        $tables = ['zbp_post', 'zbp_category', 'zbp_tag', 'zbp_upload', 'zbp_comment', 'sys_setting'];
+        $tables = $pdo->query("SHOW TABLES")->fetchAll(PDO::FETCH_COLUMN);
+        if (empty($tables)) {
+            throw new Exception("当前 MySQL 数据库中未找到任何数据表");
+        }
+
         $sql = "-- ============================================================\n";
         $sql .= "-- Blog Database Backup (MySQL Dump)\n";
         $sql .= "-- Backup Date: " . date('Y-m-d H:i:s') . "\n";
+        $sql .= "-- Total Tables: " . count($tables) . "\n";
         $sql .= "-- ============================================================\n\n";
         $sql .= "SET NAMES utf8mb4;\nSET FOREIGN_KEY_CHECKS = 0;\n\n";
 
         foreach ($tables as $tbl) {
-            if (!self::tableExistsMysql($pdo, $tbl)) continue;
-
             // 导结构
-            $createRow = $pdo->query("SHOW CREATE TABLE `{$tbl}`")->fetch();
+            $stmt = $pdo->query("SHOW CREATE TABLE `{$tbl}`");
+            $createRow = $stmt->fetch(PDO::FETCH_NUM);
+            if (!$createRow || empty($createRow[1])) continue;
+
             $sql .= "--\n-- Table structure for `{$tbl}`\n--\n\n";
             $sql .= "DROP TABLE IF EXISTS `{$tbl}`;\n";
-            $sql .= ($createRow['Create Table'] ?? $createRow['Create View'] ?? '') . ";\n\n";
+            $sql .= $createRow[1] . ";\n\n";
 
             // 导数据
             $rows = $pdo->query("SELECT * FROM `{$tbl}`")->fetchAll(PDO::FETCH_ASSOC);
             if (!empty($rows)) {
-                $sql .= "--\n-- Dumping data for table `{$tbl}`\n--\n\n";
-                foreach ($rows as $row) {
-                    $fields = array_keys($row);
-                    $escapedValues = array_map(function ($val) use ($pdo) {
-                        if ($val === null) return 'NULL';
-                        return $pdo->quote($val);
-                    }, array_values($row));
-
-                    $sql .= "INSERT INTO `{$tbl}` (`" . implode('`, `', $fields) . "`) VALUES (" . implode(', ', $escapedValues) . ");\n";
+                $sql .= "--\n-- Dumping data for table `{$tbl}` (" . count($rows) . " rows)\n--\n\n";
+                $chunkSize = 100;
+                $chunks = array_chunk($rows, $chunkSize);
+                foreach ($chunks as $chunk) {
+                    $fields = array_keys($chunk[0]);
+                    $valuesList = [];
+                    foreach ($chunk as $row) {
+                        $escapedValues = array_map(function ($val) use ($pdo) {
+                            if ($val === null) return 'NULL';
+                            return $pdo->quote($val);
+                        }, array_values($row));
+                        $valuesList[] = "(" . implode(', ', $escapedValues) . ")";
+                    }
+                    $sql .= "INSERT INTO `{$tbl}` (`" . implode('`, `', $fields) . "`) VALUES\n" . implode(",\n", $valuesList) . ";\n";
                 }
                 $sql .= "\n";
             }
