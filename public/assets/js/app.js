@@ -225,15 +225,27 @@ window.submitPostUnlock = async function(e, postId) {
    ========================================================================== */
 function initAttachmentIcons() {
     const supportedExts = {
-        'rar': 'rar', 'zip': 'zip', '7z': '7z', 'tar': 'tar', 'gz': 'gz', 'bz2': 'bz2', 'zba': 'zba',
+        'rar': 'archive', 'zip': 'archive', '7z': 'archive', 'tar': 'archive', 'gz': 'archive', 'bz2': 'archive', 'zba': 'archive',
         'pdf': 'pdf',
-        'doc': 'doc', 'docx': 'docx', 'dotx': 'doc', 'odt': 'doc', 'rtf': 'doc',
-        'xls': 'xls', 'xlsx': 'xlsx', 'csv': 'csv', 'ods': 'xls',
-        'ppt': 'ppt', 'pptx': 'pptx', 'key': 'ppt',
-        'txt': 'txt', 'log': 'txt', 'md': 'md',
-        'exe': 'exe', 'bat': 'bat', 'cmd': 'exe', 'apk': 'apk', 'msu': 'exe',
-        'iso': 'iso', 'dmg': 'iso', 'pat': 'iso', 'img': 'iso',
-        'py': 'py', 'sh': 'sh', 'sql': 'sql', 'php': 'php', 'js': 'js', 'html': 'html', 'css': 'css'
+        'doc': 'word', 'docx': 'word', 'dotx': 'word', 'odt': 'word', 'rtf': 'word',
+        'xls': 'excel', 'xlsx': 'excel', 'csv': 'excel', 'ods': 'excel', 'ots': 'excel',
+        'ppt': 'powerpoint', 'pptx': 'powerpoint', 'key': 'powerpoint', 'odf': 'powerpoint', 'otp': 'powerpoint',
+        'txt': 'text', 'log': 'text', 'md': 'text', 'conf': 'text', 'ini': 'text', 'dat': 'text', 'ics': 'text',
+        'exe': 'exe', 'bat': 'exe', 'cmd': 'exe', 'apk': 'exe', 'msu': 'exe', 'dll': 'exe',
+        'iso': 'iso', 'dmg': 'iso', 'pat': 'iso', 'img': 'iso', 'bin': 'iso',
+        'py': 'python', 'pyw': 'python', 'ipynb': 'python',
+        'sh': 'shell', 'bash': 'shell', 'zsh': 'shell',
+        'sql': 'sql', 'db': 'sql', 'sqlite': 'sql',
+        'php': 'php',
+        'js': 'js', 'ts': 'js', 'jsx': 'js', 'tsx': 'js',
+        'html': 'html', 'htm': 'html', 'xml': 'html',
+        'css': 'css', 'scss': 'css', 'sass': 'css', 'less': 'css',
+        'json': 'json', 'yml': 'json', 'yaml': 'json',
+        'jpg': 'image', 'jpeg': 'image', 'png': 'image', 'gif': 'image', 'bmp': 'image', 'webp': 'image', 'psd': 'image', 'ai': 'image', 'eps': 'image',
+        'mp3': 'audio', 'wav': 'audio', 'flac': 'audio', 'aac': 'audio', 'mid': 'audio', 'ogg': 'audio',
+        'mp4': 'video', 'mkv': 'video', 'avi': 'video', 'mov': 'video', 'flv': 'video', 'wmv': 'video',
+        'c': 'cpp', 'cpp': 'cpp', 'h': 'cpp', 'hpp': 'cpp',
+        'java': 'java', 'jar': 'java'
     };
 
     document.querySelectorAll('.article-body a[href]').forEach(a => {

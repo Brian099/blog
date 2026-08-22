@@ -33,6 +33,35 @@ if (empty($path)) $path = '/';
 
 // 静态资源兜底路由（无论 Nginx 运行目录指向根目录还是 public 目录，均能 100% 正确加载 CSS/JS/图片/附件）
 if (strpos($path, '/assets/') === 0 || strpos($path, '/users/') === 0 || strpos($path, '/uploads/') === 0 || strpos($path, '/zb_users/') === 0 || strpos($path, '/zb_system/') === 0) {
+    // 智能文件类型图标映射（将所有历史/现代格式请求统一重定向至 22 个纯 SVG 主题图标）
+    if (strpos($path, 'filetype') !== false || strpos($path, 'fileTypeImages') !== false) {
+        $rawBase = strtolower(pathinfo($path, PATHINFO_FILENAME));
+        $cleanBase = str_replace('icon_', '', $rawBase);
+        $svgMap = [
+            'rar' => 'archive', 'zip' => 'archive', '7z' => 'archive', 'tar' => 'archive', 'gz' => 'archive', 'bz2' => 'archive', 'zba' => 'archive',
+            'pdf' => 'pdf',
+            'doc' => 'word', 'docx' => 'word', 'dotx' => 'word', 'odt' => 'word', 'rtf' => 'word',
+            'xls' => 'excel', 'xlsx' => 'excel', 'csv' => 'excel', 'ods' => 'excel',
+            'ppt' => 'powerpoint', 'pptx' => 'powerpoint', 'key' => 'powerpoint',
+            'txt' => 'text', 'log' => 'text', 'md' => 'text', 'conf' => 'text', 'ini' => 'text', '_page' => 'text', '_blank' => 'text',
+            'exe' => 'exe', 'bat' => 'exe', 'cmd' => 'exe', 'apk' => 'exe', 'msu' => 'exe',
+            'iso' => 'iso', 'dmg' => 'iso', 'pat' => 'iso', 'img' => 'iso',
+            'py' => 'python', 'sh' => 'shell', 'sql' => 'sql', 'php' => 'php', 'js' => 'js', 'html' => 'html', 'css' => 'css', 'json' => 'json',
+            'jpg' => 'image', 'jpeg' => 'image', 'png' => 'image', 'gif' => 'image', 'bmp' => 'image', 'webp' => 'image', 'psd' => 'image',
+            'mp3' => 'audio', 'wav' => 'audio', 'flac' => 'audio',
+            'mp4' => 'video', 'mkv' => 'video', 'avi' => 'video',
+            'c' => 'cpp', 'cpp' => 'cpp', 'java' => 'java'
+        ];
+        $svgName = $svgMap[$cleanBase] ?? $cleanBase;
+        $svgFile = ROOT_PATH . '/users/filetype/' . $svgName . '.svg';
+        if (file_exists($svgFile)) {
+            header('Content-Type: image/svg+xml');
+            header('Cache-Control: public, max-age=86400');
+            readfile($svgFile);
+            exit;
+        }
+    }
+
     $rel = ltrim($path, '/');
     $possibleFiles = [
         PUBLIC_PATH . $path,
