@@ -47,8 +47,19 @@ class Helpers {
             $content = htmlspecialchars_decode($content, ENT_QUOTES);
         }
 
-        // 给图片添加 lazy 属性及灯箱点击标记
-        $content = preg_replace('/<img\s+([^>]*?)src=["\']([^"\']+)["\']([^>]*?)>/i', '<img $1 src="$2" $3 class="zoomable-img" loading="lazy">', $content);
+        // 给图片添加 lazy 属性及灯箱点击标记（智能排除 /users/filetype/ 等微型附件图标）
+        $content = preg_replace_callback('/<img\s+([^>]*?)src=["\']([^"\']+)["\']([^>]*?)>/i', function($m) {
+            $attrs1 = $m[1];
+            $src = $m[2];
+            $attrs2 = $m[3];
+
+            // 若为附件类型小图标（如 /users/filetype/rar.png），不赋予放大查看功能
+            if (stripos($src, '/users/filetype/') !== false || stripos($src, 'filetype') !== false || stripos($src, 'icon_') !== false) {
+                return '<img ' . $attrs1 . ' src="' . htmlspecialchars($src) . '" ' . $attrs2 . ' class="filetype-icon" style="vertical-align:middle; margin-right:3px; max-height:18px; width:auto; display:inline-block;" alt="file icon">';
+            }
+
+            return '<img ' . $attrs1 . ' src="' . htmlspecialchars($src) . '" ' . $attrs2 . ' class="zoomable-img" loading="lazy">';
+        }, $content);
 
         // 处理代码块，确保支持 highlight.js
         // 匹配 pre 或 pre > code
