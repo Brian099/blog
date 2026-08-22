@@ -165,10 +165,10 @@ ob_start();
                 <div id="convert-result-box" style="display: none; margin-top: 16px; padding: 14px 18px; border-radius: 8px; font-size: 0.9rem;"></div>
 
                 <div style="margin-top: 20px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-                    <button type="submit" id="btn-start-convert" class="btn btn-primary" style="background: #f59e0b; border-color: #d97706; font-weight: 600; padding: 10px 20px;">
+                    <button type="submit" id="btn-start-convert" class="btn" style="background: #f59e0b; border-color: #d97706; color: #fff; font-weight: 600; height: 38px; padding: 0 18px; box-sizing: border-box;">
                         <span>⚡ 立即从当前配置的 MySQL 转换并生成 SQLite (blog.db)</span>
                     </button>
-                    <button type="button" onclick="testMysqlConnection()" id="btn-test-mysql" class="btn btn-outline">
+                    <button type="button" onclick="testMysqlConnection()" id="btn-test-mysql" class="btn btn-outline" style="height: 38px; padding: 0 18px; box-sizing: border-box;">
                         <span>🔌 测试当前 MySQL 连通性</span>
                     </button>
                 </div>
