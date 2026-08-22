@@ -135,6 +135,14 @@ class AdminController {
             if (!$post) {
                 die('文章不存在');
             }
+        } else {
+            // 新增文章时自动预选设置中配置的默认分类
+            $defaultCateId = (int)Setting::get('default_category_id', 0);
+            $post = [
+                'cate_id' => $defaultCateId,
+                'status' => 0,
+                'is_top' => 0
+            ];
         }
 
         $categories = Category::getAll();
@@ -585,6 +593,7 @@ class AdminController {
         }
 
         $settings = Setting::getAll();
+        $categories = Category::getAll();
         require VIEW_PATH . '/admin/settings.php';
     }
 

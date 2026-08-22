@@ -22,6 +22,19 @@ class Database {
                     self::$instance->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
                     self::$instance->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
                     self::$instance->exec("PRAGMA journal_mode = WAL;");
+
+                    // 自动检测并修复 SQLite 中主键 log_ID 为 NULL 或 0 的历史文章
+                    try {
+                        $nullPosts = self::$instance->query("SELECT rowid FROM zbp_post WHERE log_ID IS NULL OR log_ID = 0")->fetchAll();
+                        if (!empty($nullPosts)) {
+                            $maxId = (int)self::$instance->query("SELECT MAX(COALESCE(log_ID, 0)) FROM zbp_post WHERE log_ID IS NOT NULL AND log_ID > 0")->fetchColumn();
+                            foreach ($nullPosts as $np) {
+                                $maxId++;
+                                self::$instance->exec("UPDATE zbp_post SET log_ID = {$maxId} WHERE rowid = {$np['rowid']}");
+                            }
+                        }
+                    } catch (Exception $ign) {}
+
                     return self::$instance;
                 } catch (Exception $e) {
                     // SQLite 异常，继续尝试备用驱动

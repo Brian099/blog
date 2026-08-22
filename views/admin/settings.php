@@ -131,7 +131,40 @@ ob_start();
             </div>
         </div>
 
-        <!-- 模块 4：管理员安全设置 -->
+        <!-- 模块 4：文章撰写与发布偏好 (独立卡片) -->
+        <div class="card" style="margin-bottom: 0; display: flex; flex-direction: column; justify-content: space-between; min-height: 260px;">
+            <div>
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 18px;">
+                    <div style="width: 36px; height: 36px; border-radius: 8px; background: #fffbeb; color: #d97706; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                    </div>
+                    <div>
+                        <h3 class="card-title">文章发布与分类偏好</h3>
+                        <p class="card-desc">配置后台新建文章时的初始分类与发文参数</p>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label" style="margin-bottom: 6px; font-size: 0.84rem; font-weight: 600;">新增文章默认分类 (Default Category)</label>
+                    <select name="default_category_id" class="form-select" style="font-size: 0.88rem; padding: 8px 12px;">
+                        <option value="0">未分类 (ID: 0)</option>
+                        <?php if (!empty($categories)): ?>
+                            <?php foreach ($categories as $cat): ?>
+                                <option value="<?= $cat['cate_ID'] ?>" <?= ((int)($settings['default_category_id'] ?? 0) === (int)$cat['cate_ID']) ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($cat['cate_Name']) ?> (ID: <?= $cat['cate_ID'] ?>)
+                                </option>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </select>
+                </div>
+            </div>
+
+            <div style="color: var(--admin-text-muted); font-size: 0.78rem; margin-top: 12px; line-height: 1.5;">
+                💡 设置后，每次进入后台「新建文章」页面时将自动默认选中该分类，无需手动切换。
+            </div>
+        </div>
+
+        <!-- 模块 5：管理员安全设置 -->
         <div class="card" style="margin-bottom: 0; display: flex; flex-direction: column; justify-content: space-between; min-height: 260px;">
             <div>
                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 18px;">

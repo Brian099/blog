@@ -93,19 +93,25 @@ $siteSettings = $siteSettings ?? \App\Models\Setting::getAll();
 
         <?php if (!empty($post['prev']) || !empty($post['next'])): ?>
             <nav class="article-footer-nav">
-                <?php if (!empty($post['prev'])): ?>
-                    <a href="/?id=<?= $post['prev']['log_ID'] ?>" class="nav-card post-nav-link" data-id="<?= $post['prev']['log_ID'] ?>">
+                <?php if (!empty($post['prev'])): 
+                    $prevId = $post['prev']['log_ID'] ?? $post['prev']['log_id'] ?? $post['prev']['id'] ?? '';
+                    $prevTitle = $post['prev']['log_Title'] ?? $post['prev']['log_title'] ?? $post['prev']['title'] ?? '上一篇';
+                ?>
+                    <a href="/?id=<?= $prevId ?>" class="nav-card post-nav-link" data-id="<?= $prevId ?>">
                         <span class="nav-label">← 上一篇</span>
-                        <span class="nav-title"><?= htmlspecialchars($post['prev']['log_Title']) ?></span>
+                        <span class="nav-title"><?= htmlspecialchars($prevTitle) ?></span>
                     </a>
                 <?php else: ?>
                     <div></div>
                 <?php endif; ?>
 
-                <?php if (!empty($post['next'])): ?>
-                    <a href="/?id=<?= $post['next']['log_ID'] ?>" class="nav-card post-nav-link" data-id="<?= $post['next']['log_ID'] ?>" style="text-align: right;">
+                <?php if (!empty($post['next'])): 
+                    $nextId = $post['next']['log_ID'] ?? $post['next']['log_id'] ?? $post['next']['id'] ?? '';
+                    $nextTitle = $post['next']['log_Title'] ?? $post['next']['log_title'] ?? $post['next']['title'] ?? '下一篇';
+                ?>
+                    <a href="/?id=<?= $nextId ?>" class="nav-card post-nav-link" data-id="<?= $nextId ?>" style="text-align: right;">
                         <span class="nav-label">下一篇 →</span>
-                        <span class="nav-title"><?= htmlspecialchars($post['next']['log_Title']) ?></span>
+                        <span class="nav-title"><?= htmlspecialchars($nextTitle) ?></span>
                     </a>
                 <?php endif; ?>
             </nav>

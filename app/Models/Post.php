@@ -98,15 +98,17 @@ class Post {
         if (!$post) return null;
 
         // 获取分类
+        $cateId = (int)($post['log_CateID'] ?? $post['log_cateid'] ?? 0);
         $category = null;
-        if (!empty($post['log_CateID'])) {
-            $category = Category::getById((int)$post['log_CateID']);
+        if ($cateId > 0) {
+            $category = Category::getById($cateId);
         }
 
         // 解析标签
+        $tagRaw = $post['log_Tag'] ?? $post['log_tag'] ?? '';
         $tags = [];
-        if (!empty($post['log_Tag'])) {
-            if (preg_match_all('/\{(\d+)\}/', $post['log_Tag'], $m)) {
+        if (!empty($tagRaw)) {
+            if (preg_match_all('/\{(\d+)\}/', $tagRaw, $m)) {
                 $tagIds = $m[1];
                 if (!empty($tagIds)) {
                     $placeholders = implode(',', array_fill(0, count($tagIds), '?'));
@@ -116,26 +118,30 @@ class Post {
         }
 
         // 处理正文 HTML 和阅读时间
-        $processedContent = Helpers::processContent($post['log_Content']);
-        $readTime = Helpers::estimateReadingTime($post['log_Content']);
+        $rawContent = $post['log_Content'] ?? $post['log_content'] ?? '';
+        $processedContent = Helpers::processContent($rawContent);
+        $readTime = Helpers::estimateReadingTime($rawContent);
 
-        // 上一篇与下一篇
+        // 上一篇与下一篇（支持同一秒发布按 ID 排序）
+        $postTime = (int)($post['log_PostTime'] ?? $post['log_posttime'] ?? time());
+        $actualId = (int)($post['log_ID'] ?? $post['log_id'] ?? $id);
         $prev = Database::fetchOne(
-            "SELECT log_ID, log_Title FROM zbp_post WHERE log_Status = 0 AND log_Type = 0 AND log_PostTime < ? ORDER BY log_PostTime DESC LIMIT 1",
-            [$post['log_PostTime']]
+            "SELECT log_ID, log_Title FROM zbp_post WHERE log_Status = 0 AND log_Type = 0 AND (log_PostTime < ? OR (log_PostTime = ? AND log_ID < ?)) ORDER BY log_PostTime DESC, log_ID DESC LIMIT 1",
+            [$postTime, $postTime, $actualId]
         );
         $next = Database::fetchOne(
-            "SELECT log_ID, log_Title FROM zbp_post WHERE log_Status = 0 AND log_Type = 0 AND log_PostTime > ? ORDER BY log_PostTime ASC LIMIT 1",
-            [$post['log_PostTime']]
+            "SELECT log_ID, log_Title FROM zbp_post WHERE log_Status = 0 AND log_Type = 0 AND (log_PostTime > ? OR (log_PostTime = ? AND log_ID > ?)) ORDER BY log_PostTime ASC, log_ID ASC LIMIT 1",
+            [$postTime, $postTime, $actualId]
         );
 
         // 解析 log_Meta 中的自定义密码
+        $rawMeta = $post['log_Meta'] ?? $post['log_meta'] ?? '';
         $meta = [];
-        if (!empty($post['log_Meta'])) {
-            $decoded = json_decode($post['log_Meta'], true);
+        if (!empty($rawMeta)) {
+            $decoded = json_decode($rawMeta, true);
             if (is_array($decoded)) {
                 $meta = $decoded;
-            } elseif (preg_match('/password[:=]([^\s;,]+)/i', (string)$post['log_Meta'], $m)) {
+            } elseif (preg_match('/password[:=]([^\s;,]+)/i', (string)$rawMeta, $m)) {
                 $meta['password'] = trim($m[1]);
             }
         }
@@ -157,22 +163,22 @@ class Post {
         }
 
         return [
-            'id' => (int)$post['log_ID'],
-            'title' => $post['log_Title'],
-            'content_raw' => $post['log_Content'],
+            'id' => $actualId,
+            'title' => $post['log_Title'] ?? $post['log_title'] ?? '无标题',
+            'content_raw' => $rawContent,
             'content' => $processedContent,
-            'intro' => $post['log_Intro'],
-            'post_time' => (int)$post['log_PostTime'],
-            'date_formatted' => Helpers::formatDate((int)$post['log_PostTime']),
+            'intro' => $post['log_Intro'] ?? $post['log_intro'] ?? '',
+            'post_time' => $postTime,
+            'date_formatted' => Helpers::formatDate($postTime),
             'read_time' => $readTime,
-            'views' => (int)$post['log_ViewNums'],
-            'status' => (int)$post['log_Status'],
-            'is_top' => (int)$post['log_IsTop'],
+            'views' => (int)($post['log_ViewNums'] ?? $post['log_viewnums'] ?? 0),
+            'status' => (int)($post['log_Status'] ?? $post['log_status'] ?? 0),
+            'is_top' => (int)($post['log_IsTop'] ?? $post['log_istop'] ?? 0),
             'category' => $category,
-            'cate_id' => (int)$post['log_CateID'],
+            'cate_id' => $cateId,
             'tags' => $tags,
-            'tags_raw' => $post['log_Tag'],
-            'alias' => $post['log_Alias'] ?? '',
+            'tags_raw' => $tagRaw,
+            'alias' => $post['log_Alias'] ?? $post['log_alias'] ?? '',
             'meta' => $meta,
             'password' => $password,
             'is_protected' => $isProtected,
@@ -325,11 +331,16 @@ class Post {
             }
             $metaJson = !empty($meta) ? json_encode($meta, JSON_UNESCAPED_UNICODE) : '';
 
+            // 计算新的文章 ID，确保在 SQLite 或 MySQL 下 log_ID 均绝对不为 NULL
+            $maxRow = Database::fetchOne("SELECT MAX(COALESCE(log_ID, 0)) as max_id FROM zbp_post WHERE log_ID IS NOT NULL");
+            $maxId = (int)($maxRow['max_id'] ?? $maxRow['MAX(COALESCE(log_ID, 0))'] ?? 0);
+            $newId = $maxId + 1;
+
             Database::execute(
-                "INSERT INTO zbp_post (log_Title, log_Content, log_Intro, log_CateID, log_Status, log_IsTop, log_Tag, log_Alias, log_AuthorID, log_Type, log_Meta, log_PostTime, log_CreateTime, log_UpdateTime) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 0, ?, ?, ?, ?)",
-                [$title, $content, $intro, $cateId, $status, $isTop, $tagsRaw, $alias, $metaJson, $time, $time, $time]
+                "INSERT INTO zbp_post (log_ID, log_Title, log_Content, log_Intro, log_CateID, log_Status, log_IsTop, log_Tag, log_Alias, log_AuthorID, log_Type, log_Meta, log_ViewNums, log_CommNums, log_PostTime, log_CreateTime, log_UpdateTime) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 0, ?, 0, 0, ?, ?, ?)",
+                [$newId, $title, $content, $intro, $cateId, $status, $isTop, $tagsRaw, $alias, $metaJson, $time, $time, $time]
             );
-            return (int)Database::lastInsertId();
+            return $newId;
         }
     }
 
