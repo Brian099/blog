@@ -317,26 +317,54 @@ class Post {
     }
 
     /**
+     * 解析并清洗 CSS 规则，移除定宽、定高及 nowrap 限制，保留其他正常样式
+     */
+    public static function cleanCssStyle(string $style): string {
+        $rules = explode(';', $style);
+        $kept = [];
+        foreach ($rules as $rule) {
+            $rule = trim($rule);
+            if (empty($rule) || strpos($rule, ':') === false) continue;
+            $parts = explode(':', $rule, 2);
+            $prop = strtolower(trim($parts[0]));
+            $val = strtolower(trim($parts[1] ?? ''));
+            
+            // 过滤禁止换行与固定尺寸限制
+            if (in_array($prop, ['text-wrap-mode', 'text-wrap', 'white-space', 'word-break'])) {
+                continue;
+            }
+            if (in_array($prop, ['width', 'height', 'min-width', 'max-width', 'min-height', 'max-height'])) {
+                continue;
+            }
+            if (empty($val)) {
+                continue;
+            }
+            $kept[] = "{$prop}: {$val}";
+        }
+        return implode('; ', $kept);
+    }
+
+    /**
      * 清洗 HTML 中的图片/表格长宽限制、禁止换行属性与定宽 Style 限制
      */
     public static function cleanResponsiveHtml(string $html): string {
         if (empty($html)) return $html;
 
-        // 1. 处理 <img> 标签：移除 width, height 属性，并清理 style 中的 width / height / max-width 限制
+        // 1. 处理 <img> 标签：移除 width, height 属性，并清理 style 中的尺寸限制
         $html = preg_replace_callback('/<img\b([^>]*)>/is', function($m) {
             $attrs = $m[1];
             $attrs = preg_replace('/\s*(?:width|height)\s*=\s*(["\']).*?\1/is', '', $attrs);
             $attrs = preg_replace('/\s*(?:width|height)\s*=\s*[\d%pxpt]+/is', '', $attrs);
             
-            $attrs = preg_replace_callback('/style\s*=\s*(["\'])(.*?)\1/is', function($sm) {
+            $attrs = preg_replace_callback('/\bstyle\s*=\s*(["\'])(.*?)\1/is', function($sm) {
                 $quote = $sm[1];
-                $style = $sm[2];
-                $style = preg_replace('/\b(?:min-|max-)?(?:width|height)\s*:\s*[^;]+;?/is', '', $style);
-                $style = trim(preg_replace('/;{2,}/', ';', trim($style)), "; \t\n\r\0\x0B");
-                return $style ? " style={$quote}{$style}{$quote}" : '';
+                $cleanStyle = self::cleanCssStyle($sm[2]);
+                return $cleanStyle ? " style={$quote}{$cleanStyle}{$quote}" : '';
             }, $attrs);
             
-            return '<img' . $attrs . '>';
+            $attrs = preg_replace('/\s*style\s*=\s*(["\'])\s*\1/is', '', $attrs);
+            $attrs = trim(preg_replace('/\s+/', ' ', $attrs));
+            return '<img' . ($attrs ? ' ' . $attrs : '') . '>';
         }, $html);
 
         // 2. 处理 <table>, <tr>, <td>, <th>, <col>, <colgroup>, <tbody>, <thead> 等表格相关标签
@@ -344,46 +372,42 @@ class Post {
             $tag = $m[1];
             $attrs = $m[2];
             
-            // 移除 HTML width, height, nowrap 属性
             $attrs = preg_replace('/\s*(?:width|height)\s*=\s*(["\']).*?\1/is', '', $attrs);
             $attrs = preg_replace('/\s*(?:width|height)\s*=\s*[\d%pxpt]+/is', '', $attrs);
             $attrs = preg_replace('/\s+nowrap(?:\s*=\s*(["\']).*?\1)?/is', '', $attrs);
             
-            // 清理 style 属性中的 width/height/white-space/nowrap 等限制
-            $attrs = preg_replace_callback('/style\s*=\s*(["\'])(.*?)\1/is', function($sm) {
+            $attrs = preg_replace_callback('/\bstyle\s*=\s*(["\'])(.*?)\1/is', function($sm) {
                 $quote = $sm[1];
-                $style = $sm[2];
-                $style = preg_replace('/\b(?:min-|max-)?(?:width|height)\s*:\s*[^;]+;?/is', '', $style);
-                $style = preg_replace('/\bwhite-space\s*:\s*nowrap\s*;?/is', '', $style);
-                $style = preg_replace('/\bword-break\s*:\s*keep-all\s*;?/is', '', $style);
-                $style = trim(preg_replace('/;{2,}/', ';', trim($style)), "; \t\n\r\0\x0B");
-                return $style ? " style={$quote}{$style}{$quote}" : '';
+                $cleanStyle = self::cleanCssStyle($sm[2]);
+                return $cleanStyle ? " style={$quote}{$cleanStyle}{$quote}" : '';
             }, $attrs);
             
-            return "<{$tag}" . $attrs . '>';
+            $attrs = preg_replace('/\s*style\s*=\s*(["\'])\s*\1/is', '', $attrs);
+            $attrs = trim(preg_replace('/\s+/', ' ', $attrs));
+            return "<{$tag}" . ($attrs ? ' ' . $attrs : '') . '>';
         }, $html);
 
-        // 3. 处理 <div>, <p>, <span>, <section>, <article>, <figure> 中的固定宽度与 white-space: nowrap
+        // 3. 处理 <div>, <p>, <span>, <section>, <article>, <figure> 等文本容器
         $html = preg_replace_callback('/<(div|p|span|section|article|figure)\b([^>]*)>/is', function($m) {
             $tag = $m[1];
             $attrs = $m[2];
             
             $attrs = preg_replace('/\s*(?:width|height)\s*=\s*(["\']).*?\1/is', '', $attrs);
             $attrs = preg_replace('/\s*(?:width|height)\s*=\s*[\d%pxpt]+/is', '', $attrs);
+            $attrs = preg_replace('/\s+nowrap(?:\s*=\s*(["\']).*?\1)?/is', '', $attrs);
 
-            $attrs = preg_replace_callback('/style\s*=\s*(["\'])(.*?)\1/is', function($sm) {
+            $attrs = preg_replace_callback('/\bstyle\s*=\s*(["\'])(.*?)\1/is', function($sm) {
                 $quote = $sm[1];
-                $style = $sm[2];
-                $style = preg_replace('/\b(?:min-|max-)?width\s*:\s*\d+[^;]*;?/is', '', $style);
-                $style = preg_replace('/\bwhite-space\s*:\s*nowrap\s*;?/is', '', $style);
-                $style = trim(preg_replace('/;{2,}/', ';', trim($style)), "; \t\n\r\0\x0B");
-                return $style ? " style={$quote}{$style}{$quote}" : '';
+                $cleanStyle = self::cleanCssStyle($sm[2]);
+                return $cleanStyle ? " style={$quote}{$cleanStyle}{$quote}" : '';
             }, $attrs);
 
-            return "<{$tag}" . $attrs . '>';
+            $attrs = preg_replace('/\s*style\s*=\s*(["\'])\s*\1/is', '', $attrs);
+            $attrs = trim(preg_replace('/\s+/', ' ', $attrs));
+            return "<{$tag}" . ($attrs ? ' ' . $attrs : '') . '>';
         }, $html);
 
-        // 4. 清理空 style 属性与残留无效空格
+        // 4. 清理残留的空 style 属性
         $html = preg_replace('/\s*style\s*=\s*(["\'])\s*\1/is', '', $html);
 
         return $html;
