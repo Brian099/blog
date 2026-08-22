@@ -26,13 +26,17 @@ $parsedUrl = parse_url($requestUri);
 $path = rtrim($parsedUrl['path'] ?? '/', '/');
 if (empty($path)) $path = '/';
 
-// 静态资源兜底路由（无论 Nginx 运行目录指向根目录还是 public 目录，均能 100% 正确加载 CSS/JS/图片）
-if (strpos($path, '/assets/') === 0 || strpos($path, '/uploads/') === 0 || strpos($path, '/zb_users/upload/') === 0) {
+// 静态资源兜底路由（无论 Nginx 运行目录指向根目录还是 public 目录，均能 100% 正确加载 CSS/JS/图片/附件）
+if (strpos($path, '/assets/') === 0 || strpos($path, '/users/') === 0 || strpos($path, '/uploads/') === 0 || strpos($path, '/zb_users/') === 0 || strpos($path, '/zb_system/') === 0) {
     $rel = ltrim($path, '/');
     $possibleFiles = [
         PUBLIC_PATH . $path,
         ROOT_PATH . $path,
-        UPLOAD_PATH . str_replace(['/uploads', '/zb_users/upload'], '', $path)
+        ROOT_PATH . '/' . $rel,
+        ROOT_PATH . '/users/' . str_replace(['zb_users/', 'uploads/'], '', $rel),
+        ROOT_PATH . '/users/upload/' . str_replace(['users/upload/', 'zb_users/upload/', 'uploads/'], '', $rel),
+        ROOT_PATH . '/users/filetype/' . str_replace(['users/filetype/', 'zb_system/image/filetype/', 'zb_users/plugin/Neditor/dialogs/attachment/fileTypeImages/'], '', $rel),
+        UPLOAD_PATH . str_replace(['/users/upload', '/zb_users/upload', '/uploads'], '', $path)
     ];
     foreach ($possibleFiles as $file) {
         if (file_exists($file) && is_file($file)) {
@@ -47,6 +51,11 @@ if (strpos($path, '/assets/') === 0 || strpos($path, '/uploads/') === 0 || strpo
                 'svg' => 'image/svg+xml',
                 'webp' => 'image/webp',
                 'ico' => 'image/x-icon',
+                'zip' => 'application/zip',
+                'rar' => 'application/x-rar-compressed',
+                '7z' => 'application/x-7z-compressed',
+                'pdf' => 'application/pdf',
+                'txt' => 'text/plain; charset=utf-8',
                 'woff' => 'font/woff',
                 'woff2' => 'font/woff2',
                 'ttf' => 'font/ttf'

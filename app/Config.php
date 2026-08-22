@@ -9,9 +9,9 @@ if (!defined('VIEW_PATH')) define('VIEW_PATH', ROOT_PATH . '/views');
 if (!defined('PUBLIC_PATH')) define('PUBLIC_PATH', ROOT_PATH . '/public');
 if (!defined('DATA_PATH')) define('DATA_PATH', ROOT_PATH . '/data');
 
-// 统一使用 Z-Blog 原生 zb_users/upload/ 作为上传物理存储目录
+// 统一使用现代纯净 users/upload/ 作为上传物理存储目录
 if (!defined('UPLOAD_PATH')) {
-    define('UPLOAD_PATH', ROOT_PATH . '/zb_users/upload');
+    define('UPLOAD_PATH', ROOT_PATH . '/users/upload');
 }
 if (!is_dir(UPLOAD_PATH)) {
     @mkdir(UPLOAD_PATH, 0777, true);
@@ -104,7 +104,7 @@ return [
 
     // 站点基础路径配置
     'site_url' => '', // 自动识别
-    'upload_url' => '/zb_users/upload',
+    'upload_url' => '/users/upload',
     
     // 后台管理 Session 标识
     'admin_session_key' => 'zblog_admin_user',

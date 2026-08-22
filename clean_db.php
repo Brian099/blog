@@ -73,13 +73,14 @@ $columnsToDrop = [
 ];
 
 // 命令行参数处理
-$opts = getopt('', ['clean-sql:', 'help']);
+$opts = getopt('', ['clean-sql:', 'migrate-paths', 'help']);
 if (isset($opts['help'])) {
     echo <<<HELP
 Z-Blog 数据库瘦身与清理工具
 
 用法：
-  php -c php.ini clean_db.php                     执行当前活跃数据库（SQLite/MySQL）的瘦身清理
+  php -c php.ini clean_db.php                     执行当前活跃数据库（SQLite/MySQL）的瘦身、自适应排版优化与路径迁移
+  php -c php.ini clean_db.php --migrate-paths     单独执行路径迁移 (zb_users -> users, zb_system/image/filetype -> users/filetype)
   php -c php.ini clean_db.php --clean-sql=giraff.sql 清洗 SQL 转储文件并导出为 giraff_cleaned.sql
 
 HELP;
@@ -168,13 +169,23 @@ try {
         }
     }
 
-    // 5. 清洗全站文章的定宽/高与禁止换行等排版限制
-    echo "\n5. 批量清洗文章中的图片/表格长宽限制与 nowrap 禁止换行...\n";
+    // 5. 迁移与重命名目录及数据库中路径 (zb_users/upload -> users/upload, zb_system/image/filetype -> users/filetype)
+    echo "\n5. 规范化物理目录与数据库资源路径 (zb_users -> users, zb_system/image/filetype -> users/filetype)...\n";
+    $pathRes = migratePathsToUsers($pdo, $driver);
+    echo "   ✅ 路径迁移处理完毕！共更新 {$pathRes['updated_posts']} 篇文章中的资源路径，物理目录: {$pathRes['dir_status']}\n";
+
+    if (!empty($opts['migrate-paths'])) {
+        echo "\n🎉 单独路径迁移任务执行完毕！\n";
+        exit(0);
+    }
+
+    // 6. 清洗全站文章的定宽/高与禁止换行等排版限制
+    echo "\n6. 批量清洗文章中的图片/表格长宽限制与 nowrap 禁止换行...\n";
     $cleanRes = \App\Models\Post::batchCleanResponsive();
     echo "   ✅ 自适应排版清洗完成！共扫描 {$cleanRes['total_scanned']} 篇，修复 {$cleanRes['updated_count']} 篇文章，清理冗余限制 " . formatSize($cleanRes['bytes_saved']) . "\n";
 
-    // 6. 执行空间压缩与碎片整理
-    echo "\n6. 释放物理磁盘空间并重建索引...\n";
+    // 7. 执行空间压缩与碎片整理
+    echo "\n7. 释放物理磁盘空间并重建索引...\n";
     if ($driver === 'sqlite') {
         $beforeSize = file_exists($config['sqlite']['path']) ? filesize($config['sqlite']['path']) : 0;
         $pdo->exec("VACUUM;");
@@ -197,11 +208,12 @@ try {
     }
 
     echo "\n===============================================================\n";
-    echo "🎉 数据库瘦身与自适应排版优化完毕！\n";
+    echo "🎉 数据库瘦身、自适应排版与路径现代化规范优化完毕！\n";
     echo "   - 共删除无用数据表: {$droppedTablesCount} 个\n";
     echo "   - 共剔除冗余数据字段: {$droppedColsCount} 个\n";
+    echo "   - 规范化路径文章数: {$pathRes['updated_posts']} 篇\n";
     echo "   - 修复自适应文章篇数: {$cleanRes['updated_count']} 篇\n";
-    echo "   - 核心文章、附件、分类、标签均保持 100% 完整与快速自适应运转！\n";
+    echo "   - 核心文章、附件、分类、标签均保持 100% 完整与极速自适应运转！\n";
     echo "===============================================================\n";
 
 } catch (\Exception $e) {
@@ -305,7 +317,23 @@ function cleanSqlDumpFile(string $filePath, array $tablesToDrop, array $columnsT
         $content = preg_replace('/--\s*(?:表的结构|表的数据)\s*[`"]?' . preg_quote($tbl, '/') . '[`"]?[^\r\n]*\r?\n/is', '', $content);
     }
 
-    // 2. 自动注入 sys_setting 系统配置表定义
+    // 2. 规范化 SQL 中的资源与附件路径 (zb_users/upload -> users/upload, zb_system/image/filetype -> users/filetype)
+    echo "正在规范化 SQL 中的附件与图标路径 (zb_users/upload -> users/upload, zb_system/image/filetype -> users/filetype)...\n";
+    $content = str_replace(
+        [
+            'zb_users/upload/',
+            'zb_system/image/filetype/',
+            'zb_users/plugin/Neditor/dialogs/attachment/fileTypeImages/'
+        ],
+        [
+            'users/upload/',
+            'users/filetype/',
+            'users/filetype/'
+        ],
+        $content
+    );
+
+    // 3. 自动注入 sys_setting 系统配置表定义
     if (strpos($content, 'CREATE TABLE `sys_setting`') === false) {
         $defaultPassHash = password_hash('admin123', PASSWORD_DEFAULT);
         $sysSettingSql = "\n\n-- --------------------------------------------------------\n\n"
@@ -331,7 +359,105 @@ function cleanSqlDumpFile(string $filePath, array $tablesToDrop, array $columnsT
     $newLen = strlen($content);
 
     echo "\n✅ 纯净版 SQL 文件生成完毕: " . basename($outPath) . "\n";
+    echo "   - 已规范化所有资源路径至 users/upload/ 与 users/filetype/\n";
     echo "   - 已包含自动初始化的 `sys_setting` 系统配置表\n";
     echo "   - 处理后大小: " . formatSize($newLen) . "\n";
     echo "   - 瘦身体积: " . formatSize($origLen - $newLen) . "\n";
 }
+
+/**
+ * 辅助函数：规范化物理目录结构与数据库所有文章中路径
+ */
+function migratePathsToUsers(\PDO $pdo, string $driver): array {
+    $dirStatus = '已处于最新 users/ 结构';
+
+    // 1. 物理目录重命名 (zb_users -> users)
+    $oldDir = ROOT_PATH . '/zb_users';
+    $newDir = ROOT_PATH . '/users';
+    if (is_dir($oldDir)) {
+        if (!is_dir($newDir)) {
+            @rename($oldDir, $newDir);
+            $dirStatus = '已将 zb_users/ 目录重命名为 users/';
+        } else {
+            $oldUpload = $oldDir . '/upload';
+            $newUpload = $newDir . '/upload';
+            if (is_dir($oldUpload)) {
+                @mkdir($newUpload, 0777, true);
+                copyDirRecursive($oldUpload, $newUpload);
+            }
+            @rmdir($oldDir);
+            $dirStatus = '已将 zb_users/ 合并迁移至 users/';
+        }
+    }
+
+    // 确保 users/upload 和 users/filetype 物理目录存在
+    if (!is_dir(ROOT_PATH . '/users/upload')) @mkdir(ROOT_PATH . '/users/upload', 0777, true);
+    if (!is_dir(ROOT_PATH . '/users/filetype')) @mkdir(ROOT_PATH . '/users/filetype', 0777, true);
+
+    // 2. 数据库批量更新文章内容中的历史路径
+    $posts = $pdo->query("SELECT log_ID, log_Content, log_Intro FROM zbp_post")->fetchAll(\PDO::FETCH_ASSOC);
+    $updated = 0;
+    $updateStmt = $pdo->prepare("UPDATE zbp_post SET log_Content = ?, log_Intro = ? WHERE log_ID = ?");
+
+    foreach ($posts as $post) {
+        $c = $post['log_Content'] ?? '';
+        $intro = $post['log_Intro'] ?? '';
+
+        $newC = str_replace(
+            [
+                'zb_users/upload/',
+                'zb_system/image/filetype/',
+                'zb_users/plugin/Neditor/dialogs/attachment/fileTypeImages/'
+            ],
+            [
+                'users/upload/',
+                'users/filetype/',
+                'users/filetype/'
+            ],
+            $c
+        );
+
+        $newIntro = str_replace(
+            [
+                'zb_users/upload/',
+                'zb_system/image/filetype/',
+                'zb_users/plugin/Neditor/dialogs/attachment/fileTypeImages/'
+            ],
+            [
+                'users/upload/',
+                'users/filetype/',
+                'users/filetype/'
+            ],
+            $intro
+        );
+
+        if ($newC !== $c || $newIntro !== $intro) {
+            $updateStmt->execute([$newC, $newIntro, $post['log_ID']]);
+            $updated++;
+        }
+    }
+
+    return [
+        'updated_posts' => $updated,
+        'dir_status' => $dirStatus
+    ];
+}
+
+/**
+ * 辅助函数：递归拷贝目录
+ */
+function copyDirRecursive(string $src, string $dst): void {
+    $dir = opendir($src);
+    @mkdir($dst, 0777, true);
+    while (false !== ($file = readdir($dir))) {
+        if (($file != '.') && ($file != '..')) {
+            if (is_dir($src . '/' . $file)) {
+                copyDirRecursive($src . '/' . $file, $dst . '/' . $file);
+            } else {
+                copy($src . '/' . $file, $dst . '/' . $file);
+            }
+        }
+    }
+    closedir($dir);
+}
+
