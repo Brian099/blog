@@ -40,9 +40,11 @@ class Database {
                         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                         PDO::ATTR_EMULATE_PREPARES => false,
-                        PDO::ATTR_TIMEOUT => 2, // 2秒超时快速检测
-                        PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES {$charset}"
+                        PDO::ATTR_TIMEOUT => 2 // 2秒超时快速检测
                     ];
+                    if (defined('PDO::MYSQL_ATTR_INIT_COMMAND')) {
+                        $options[PDO::MYSQL_ATTR_INIT_COMMAND] = "SET NAMES {$charset}";
+                    }
                     self::$instance = new PDO($dsn, $m['username'] ?? 'root', $m['password'] ?? '', $options);
                     return self::$instance;
                 } catch (Exception $e) {

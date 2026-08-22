@@ -232,11 +232,42 @@ try {
             break;
 
         default:
+            $uri = $_SERVER['REQUEST_URI'] ?? '';
+            $isJson = (
+                (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false) ||
+                (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') ||
+                strpos($uri, '/action') !== false ||
+                strpos($uri, '/api') !== false ||
+                strpos($uri, '/json') !== false
+            );
+            if ($isJson) {
+                http_response_code(404);
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode(['success' => false, 'error' => '404 路由不存在: ' . htmlspecialchars($path)]);
+                exit;
+            }
             http_response_code(404);
             echo "<h1>404 Not Found</h1><p><a href='/'>返回首页</a></p>";
             break;
     }
 } catch (\Throwable $e) {
     http_response_code(500);
+    $uri = $_SERVER['REQUEST_URI'] ?? '';
+    $isJson = (
+        (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false) ||
+        (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') ||
+        strpos($uri, '/action') !== false ||
+        strpos($uri, '/api') !== false ||
+        strpos($uri, '/json') !== false
+    );
+    if ($isJson) {
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'success' => false,
+            'error' => $e->getMessage(),
+            'file' => basename($e->getFile()) . ':' . $e->getLine()
+        ]);
+        exit;
+    }
     echo "<h1>500 Server Error</h1><pre>" . htmlspecialchars($e->getMessage() . "\n" . $e->getTraceAsString()) . "</pre>";
 }

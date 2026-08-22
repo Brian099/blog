@@ -63,9 +63,11 @@ class InstallController {
             $dsn = "mysql:host={$host};port={$port};dbname={$dbname};charset={$charset}";
             $options = [
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                PDO::ATTR_TIMEOUT => 3,
-                PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES {$charset}"
+                PDO::ATTR_TIMEOUT => 3
             ];
+            if (defined('PDO::MYSQL_ATTR_INIT_COMMAND')) {
+                $options[PDO::MYSQL_ATTR_INIT_COMMAND] = "SET NAMES {$charset}";
+            }
             $pdo = new PDO($dsn, $username, $password, $options);
             echo json_encode(['success' => true, 'message' => "MySQL [{$dbname}] 连接成功！"]);
         } catch (Exception $e) {
@@ -287,10 +289,13 @@ class InstallController {
                 $charset = 'utf8mb4';
 
                 $dsn = "mysql:host={$host};port={$port};dbname={$dbname};charset={$charset}";
-                $pdo = new PDO($dsn, $username, $password, [
-                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                    PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES {$charset}"
-                ]);
+                $options = [
+                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
+                ];
+                if (defined('PDO::MYSQL_ATTR_INIT_COMMAND')) {
+                    $options[PDO::MYSQL_ATTR_INIT_COMMAND] = "SET NAMES {$charset}";
+                }
+                $pdo = new PDO($dsn, $username, $password, $options);
 
                 // 创建纯净 MySQL 架构
                 $pdo->exec("
