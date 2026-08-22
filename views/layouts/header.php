@@ -12,7 +12,7 @@ $customNav = !empty($siteSettings['custom_nav']) ? json_decode($siteSettings['cu
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= isset($currentPost) && $currentPost ? htmlspecialchars($currentPost['title']) . ' - ' : '' ?><?= htmlspecialchars($siteName) ?><?= $siteSubtitle ? ' | ' . htmlspecialchars($siteSubtitle) : '' ?></title>
-    <link rel="stylesheet" href="/assets/css/style.css">
+    <link rel="stylesheet" href="/assets/css/style.css?v=<?= file_exists(APP_PATH . '/../public/assets/css/style.css') ? filemtime(APP_PATH . '/../public/assets/css/style.css') : time() ?>">
     <!-- Highlight.js for professional code highlighting (Localized Light Theme) -->
     <link rel="stylesheet" href="/assets/css/highlight.github.min.css">
     <script src="/assets/js/highlight.min.js"></script>

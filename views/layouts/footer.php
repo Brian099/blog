@@ -17,6 +17,6 @@
     <img id="lightbox-img" src="" alt="Zoomed image">
 </div>
 
-<script src="/assets/js/app.js"></script>
+<script src="/assets/js/app.js?v=<?= file_exists(APP_PATH . '/../public/assets/js/app.js') ? filemtime(APP_PATH . '/../public/assets/js/app.js') : time() ?>"></script>
 </body>
 </html>

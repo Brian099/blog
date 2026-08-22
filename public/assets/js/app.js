@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initArticleNavigation();
     initCodeHighlightAndCopy();
     initImageLightbox();
+    initAttachmentIcons();
     initInstantSearch();
     initSidebarFilter();
     initMobileDrawer();
@@ -106,9 +107,10 @@ async function loadPost(postId, url, pushState = true) {
             history.pushState({ postId }, '', url);
         }
 
-        // 重新初始化代码高亮与灯箱
+        // 重新初始化代码高亮、灯箱与附件图标
         initCodeHighlightAndCopy();
         initImageLightbox();
+        initAttachmentIcons();
 
         // 平滑滚动到文章顶部
         const mainArea = document.querySelector('.article-main');
@@ -186,9 +188,10 @@ window.submitPostUnlock = async function(e, postId) {
             if (container) {
                 container.innerHTML = data.html;
                 if (data.title) document.title = data.title;
-                // 重新初始化代码高亮与灯箱
+                // 重新初始化代码高亮、灯箱与附件图标
                 initCodeHighlightAndCopy();
                 initImageLightbox();
+                initAttachmentIcons();
                 // 平滑滚动到文章顶部
                 const mainArea = document.querySelector('.article-main');
                 if (mainArea) mainArea.scrollTop = 0;
@@ -218,6 +221,53 @@ window.submitPostUnlock = async function(e, postId) {
 };
 
 /* ==========================================================================
+   Attachment Icons (Auto Decorate File Links with Modern VS Code Icons)
+   ========================================================================== */
+function initAttachmentIcons() {
+    const supportedExts = {
+        'rar': 'rar', 'zip': 'zip', '7z': '7z', 'tar': 'tar', 'gz': 'gz', 'bz2': 'bz2', 'zba': 'zba',
+        'pdf': 'pdf',
+        'doc': 'doc', 'docx': 'docx', 'dotx': 'doc', 'odt': 'doc', 'rtf': 'doc',
+        'xls': 'xls', 'xlsx': 'xlsx', 'csv': 'csv', 'ods': 'xls',
+        'ppt': 'ppt', 'pptx': 'pptx', 'key': 'ppt',
+        'txt': 'txt', 'log': 'txt', 'md': 'md',
+        'exe': 'exe', 'bat': 'bat', 'cmd': 'exe', 'apk': 'apk', 'msu': 'exe',
+        'iso': 'iso', 'dmg': 'iso', 'pat': 'iso', 'img': 'iso',
+        'py': 'py', 'sh': 'sh', 'sql': 'sql', 'php': 'php', 'js': 'js', 'html': 'html', 'css': 'css'
+    };
+
+    document.querySelectorAll('.article-body a[href]').forEach(a => {
+        const href = a.getAttribute('href') || '';
+        const cleanHref = href.split('?')[0].split('#')[0].toLowerCase();
+        const extMatch = cleanHref.match(/\.([a-z0-9]{2,5})$/);
+        if (!extMatch) return;
+
+        const ext = extMatch[1];
+        if (!supportedExts[ext]) return;
+
+        // Check if there is already an icon inside or immediately before the <a>
+        const prevImg = a.previousElementSibling;
+        const insideImg = a.querySelector('img');
+        
+        if (insideImg && (insideImg.src.includes('filetype') || insideImg.src.includes('icon_') || insideImg.classList.contains('filetype-icon'))) {
+            return;
+        }
+
+        if (prevImg && prevImg.tagName === 'IMG' && (prevImg.src.includes('filetype') || prevImg.src.includes('icon_') || prevImg.classList.contains('filetype-icon'))) {
+            return;
+        }
+
+        // Prepend VS Code icon
+        const iconName = supportedExts[ext];
+        const icon = document.createElement('img');
+        icon.className = 'filetype-icon';
+        icon.src = `/users/filetype/${iconName}.png`;
+        icon.alt = ext.toUpperCase();
+        a.insertBefore(icon, a.firstChild);
+    });
+}
+
+/* ==========================================================================
    Image Lightbox (Click to View Full Size)
    ========================================================================== */
 function initImageLightbox() {
@@ -225,7 +275,7 @@ function initImageLightbox() {
     const modalImg = document.getElementById('lightbox-img');
     if (!modal || !modalImg) return;
 
-    document.querySelectorAll('.article-body img').forEach((img) => {
+    document.querySelectorAll('.article-body img:not(.filetype-icon):not([src*="filetype"]):not([src*="icon_"])').forEach((img) => {
         img.style.cursor = 'zoom-in';
         img.onclick = () => {
             modalImg.src = img.src;
