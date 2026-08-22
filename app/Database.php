@@ -10,22 +10,32 @@ class Database {
     public static function getConn(): PDO {
         if (self::$instance === null) {
             $config = require APP_PATH . '/Config.php';
-            $driver = $config['db_driver'] ?? 'sqlite';
 
-            try {
-                if ($driver === 'sqlite') {
-                    $dbPath = $config['sqlite']['path'];
-                    self::$instance = new PDO("sqlite:" . $dbPath);
+            // 核心数据库连接优先级规则：
+            // 1. 优先使用本地 SQLite blog.db（只要存在 blog.db 文件，即使存在 c_option.php 也优先使用本地 SQLite）
+            // 2. 无本地 SQLite blog.db 文件时，才尝试连接 MySQL (如来自 c_option.php 或环境变量)
+            $sqlitePath = $config['sqlite']['path'] ?? (DATA_PATH . '/blog.db');
+            
+            if (file_exists($sqlitePath)) {
+                try {
+                    self::$instance = new PDO("sqlite:" . $sqlitePath);
                     self::$instance->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
                     self::$instance->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
                     self::$instance->exec("PRAGMA journal_mode = WAL;");
-                } else {
-                    $m = $config['mysql'];
-                    $charset = !empty($m['charset']) ? $m['charset'] : 'utf8mb4';
-                    // 统一为 utf8mb4 保证 emoji 与多语言支持
-                    if (strtolower($charset) === 'utf8') $charset = 'utf8mb4';
+                    return self::$instance;
+                } catch (Exception $e) {
+                    // SQLite 异常，继续尝试备用驱动
+                }
+            }
 
-                    $dsn = "mysql:host={$m['host']};port={$m['port']};dbname={$m['dbname']};charset={$charset}";
+            // 无本地 SQLite db 文件，尝试连接 MySQL
+            $m = $config['mysql'] ?? [];
+            if (!empty($m['host']) && !empty($m['dbname'])) {
+                try {
+                    $charset = !empty($m['charset']) ? $m['charset'] : 'utf8mb4';
+                    if (strtolower($charset) === 'utf8') $charset = 'utf8mb4';
+                    $port = (int)($m['port'] ?? 3306);
+                    $dsn = "mysql:host={$m['host']};port={$port};dbname={$m['dbname']};charset={$charset}";
                     $options = [
                         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
@@ -33,30 +43,25 @@ class Database {
                         PDO::ATTR_TIMEOUT => 2, // 2秒超时快速检测
                         PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES {$charset}"
                     ];
-                    self::$instance = new PDO($dsn, $m['username'], $m['password'], $options);
+                    self::$instance = new PDO($dsn, $m['username'] ?? 'root', $m['password'] ?? '', $options);
+                    return self::$instance;
+                } catch (Exception $e) {
+                    // MySQL 无法连通
                 }
-            } catch (Exception $e) {
-                // 若 MySQL 无法连通（例如本地测试环境没有 NAS Docker 网络 172.17.0.1），且存在本地 SQLite 数据库，则平滑回退至 SQLite
-                if ($driver === 'mysql' && !empty($config['sqlite']['path']) && file_exists($config['sqlite']['path'])) {
-                    try {
-                        $dbPath = $config['sqlite']['path'];
-                        self::$instance = new PDO("sqlite:" . $dbPath);
-                        self::$instance->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-                        self::$instance->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-                        self::$instance->exec("PRAGMA journal_mode = WAL;");
-                        return self::$instance;
-                    } catch (Exception $se) {
-                        // fallback failed, continue to error display
-                    }
-                }
-
-                die("<div style='font-family:sans-serif;max-width:600px;margin:50px auto;padding:24px;border:1px solid #fecaca;background:#fef2f2;border-radius:8px;color:#991b1b;line-height:1.6;'>
-                    <h3 style='margin-top:0;'>❌ 数据库连接异常</h3>
-                    <p>驱动类型: <strong>" . strtoupper($driver) . "</strong></p>
-                    <p>错误信息: " . htmlspecialchars($e->getMessage()) . "</p>
-                    <p style='font-size:0.85rem;color:#7f1d1d;'>提示：当前优先尝试连接 <code>c_option.php</code> 中的 MySQL 数据库。若在本地 Windows 测试环境运行，请确认 MySQL 服务已启动，或移除本地目录下的 <code>c_option.php</code> 即可自动切回本地 SQLite (blog.db)。</p>
-                </div>");
             }
+
+            // 若均未连通且系统未安装，自动重定向到安装引导程序
+            $uri = $_SERVER['REQUEST_URI'] ?? '';
+            if (strpos($uri, '/install') === false && php_sapi_name() !== 'cli') {
+                header('Location: /install');
+                exit;
+            }
+
+            die("<div style='font-family:sans-serif;max-width:600px;margin:50px auto;padding:24px;border:1px solid #fecaca;background:#fef2f2;border-radius:8px;color:#991b1b;line-height:1.6;'>
+                <h3 style='margin-top:0;'>❌ 数据库未连接</h3>
+                <p>系统未检测到本地 SQLite 数据库文件 (<code>data/blog.db</code>)，且 MySQL 数据库无法连通。</p>
+                <p><a href='/install' style='display:inline-block;padding:8px 16px;background:#dc2626;color:#fff;text-decoration:none;border-radius:4px;font-weight:600;'>前往安装与迁移引导程序 &rarr;</a></p>
+            </div>");
         }
         return self::$instance;
     }

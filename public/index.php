@@ -63,9 +63,26 @@ if (strpos($path, '/assets/') === 0 || strpos($path, '/uploads/') === 0 || strpo
 use App\Controllers\BlogController;
 use App\Controllers\SearchController;
 use App\Controllers\AdminController;
+use App\Controllers\InstallController;
 
 try {
     switch ($path) {
+        case '/install':
+            (new InstallController())->index();
+            break;
+
+        case '/install/test-db':
+            (new InstallController())->testDb();
+            break;
+
+        case '/install/migrate':
+            (new InstallController())->migrate();
+            break;
+
+        case '/install/fresh':
+            (new InstallController())->fresh();
+            break;
+
         case '/':
             (new BlogController())->index();
             break;

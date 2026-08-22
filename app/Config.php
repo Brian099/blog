@@ -36,10 +36,12 @@ foreach ($possibleOptionPaths as $path) {
     }
 }
 
-// 基础默认配置
-$dbDriver = 'sqlite';
+// 默认数据库配置
+$sqliteDbPath = DATA_PATH . '/blog.db';
+$sqliteExists = file_exists($sqliteDbPath);
+
 $sqliteConfig = [
-    'path' => DATA_PATH . '/blog.db'
+    'path' => $sqliteDbPath
 ];
 $mysqlConfig = [
     'host' => '127.0.0.1',
@@ -50,13 +52,15 @@ $mysqlConfig = [
     'charset' => 'utf8mb4'
 ];
 
-// 如果检测到现有 Z-Blog 的 c_option.php，自动无缝提取 MySQL 配置
+$cOptionMysqlAvailable = false;
+
+// 解析现有 Z-Blog 的 c_option.php 配置文件
 if ($zblogOptionFile) {
     $cOpt = @include $zblogOptionFile;
     if (is_array($cOpt)) {
         $dbType = strtolower($cOpt['ZC_DATABASE_TYPE'] ?? '');
         if (in_array($dbType, ['mysql', 'mysqli', 'pdo_mysql'])) {
-            $dbDriver = 'mysql';
+            $cOptionMysqlAvailable = true;
             $mysqlConfig = [
                 'host' => $cOpt['ZC_MYSQL_SERVER'] ?? '127.0.0.1',
                 'port' => (int)($cOpt['ZC_MYSQL_PORT'] ?? 3306),
@@ -66,20 +70,33 @@ if ($zblogOptionFile) {
                 'charset' => $cOpt['ZC_MYSQL_CHARSET'] ?? 'utf8mb4'
             ];
         } elseif (in_array($dbType, ['sqlite', 'sqlite3', 'pdo_sqlite'])) {
-            $dbDriver = 'sqlite';
             if (!empty($cOpt['ZC_SQLITE_NAME'])) {
-                $sqlitePath = $cOpt['ZC_SQLITE_NAME'];
-                if (!file_exists($sqlitePath) && file_exists(ROOT_PATH . '/zb_users/data/' . $sqlitePath)) {
-                    $sqlitePath = ROOT_PATH . '/zb_users/data/' . $sqlitePath;
+                $customSqlite = $cOpt['ZC_SQLITE_NAME'];
+                if (!file_exists($customSqlite) && file_exists(ROOT_PATH . '/zb_users/data/' . $customSqlite)) {
+                    $customSqlite = ROOT_PATH . '/zb_users/data/' . $customSqlite;
                 }
-                $sqliteConfig['path'] = $sqlitePath;
+                if (file_exists($customSqlite)) {
+                    $sqliteConfig['path'] = $customSqlite;
+                    $sqliteExists = true;
+                }
             }
         }
     }
 }
 
+// 核心数据库连接优先级规则：
+// 1. 优先使用本地 SQLite blog.db（只要存在 blog.db 文件，即使存在 c_option.php 也优先使用本地 SQLite）
+// 2. 无本地 SQLite blog.db 文件时，才尝试连接 c_option.php 中的 MySQL 数据库
+if ($sqliteExists) {
+    $dbDriver = 'sqlite';
+} elseif ($cOptionMysqlAvailable) {
+    $dbDriver = 'mysql';
+} else {
+    $dbDriver = 'sqlite';
+}
+
 return [
-    // 数据库驱动：'mysql' 或 'sqlite'（若检测到 c_option.php 则自动无缝设为 mysql）
+    // 数据库驱动：'sqlite' 或 'mysql'（严格遵循：本地有 blog.db 优先使用 SQLite，无 db 文件则尝试 MySQL）
     'db_driver' => $dbDriver,
 
     // SQLite 配置
@@ -95,6 +112,9 @@ return [
     // 后台管理 Session 标识
     'admin_session_key' => 'zblog_admin_user',
 
-    // 适配的 c_option.php 来源路径
-    'c_option_source' => $zblogOptionFile
+    // 适配的 c_option.php 来源路径与状态
+    'c_option_source' => $zblogOptionFile,
+    'c_option_has_mysql' => $cOptionMysqlAvailable,
+    'sqlite_db_exists' => $sqliteExists,
+    'is_installed' => file_exists(DATA_PATH . '/install.lock') || $sqliteExists
 ];
