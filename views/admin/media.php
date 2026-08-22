@@ -138,13 +138,22 @@ ob_start();
                             <?php endif; ?>
                         </td>
                         <td>
-                            <div style="width: 48px; height: 48px; border-radius: 6px; background: #f8fafc; overflow: hidden; display: flex; align-items: center; justify-content: center; border: 1px solid #e2e8f0; flex-shrink: 0;">
-                                <?php 
-                                    $itemExt = strtoupper(pathinfo($tab === 'disk' ? $item['filename'] : $item['name'], PATHINFO_EXTENSION));
-                                    $itemImgUrl = $tab === 'disk' ? $item['web_url'] : $item['url'];
-                                ?>
+                            <?php 
+                                $itemExt = strtoupper(pathinfo($tab === 'disk' ? $item['filename'] : $item['name'], PATHINFO_EXTENSION));
+                                $itemImgUrl = $tab === 'disk' ? $item['web_url'] : $item['url'];
+                                $itemTitle = htmlspecialchars($tab === 'disk' ? $item['filename'] : $item['name']);
+                            ?>
+                            <div style="width: 48px; height: 48px; border-radius: 6px; background: #f8fafc; overflow: hidden; display: flex; align-items: center; justify-content: center; border: 1px solid #e2e8f0; flex-shrink: 0; position: relative;">
                                 <?php if ($item['is_image']): ?>
-                                    <img src="<?= htmlspecialchars($itemImgUrl) ?>" alt="<?= htmlspecialchars($tab === 'disk' ? $item['filename'] : $item['name']) ?>" loading="lazy" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.onerror=null; this.parentElement.innerHTML='<div style=\'display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%; height:100%; color:#94a3b8;\'><svg width=\'18\' height=\'18\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'1.8\'><rect x=\'3\' y=\'3\' width=\'18\' height=\'18\' rx=\'2\'/><circle cx=\'8.5\' cy=\'8.5\' r=\'1.5\'/><polyline points=\'21 15 16 10 5 21\'/></svg><span style=\'font-size:0.6rem; font-weight:600; margin-top:2px;\'><?= $itemExt ?></span></div>';">
+                                    <img src="<?= htmlspecialchars($itemImgUrl) ?>" 
+                                         alt="<?= $itemTitle ?>" 
+                                         loading="lazy" 
+                                         onclick="openImageLightbox('<?= htmlspecialchars($itemImgUrl) ?>', '<?= addslashes($itemTitle) ?>', '<?= $itemExt ?>', '<?= htmlspecialchars($item['size_formatted']) ?>')"
+                                         title="点击放大查看图片"
+                                         style="width: 100%; height: 100%; object-fit: cover; cursor: zoom-in; transition: transform 0.2s;"
+                                         onmouseover="this.style.transform='scale(1.08)'"
+                                         onmouseout="this.style.transform='scale(1)'"
+                                         onerror="this.onerror=null; this.parentElement.innerHTML='<div style=\'display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%; height:100%; color:#94a3b8;\'><svg width=\'18\' height=\'18\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'1.8\'><rect x=\'3\' y=\'3\' width=\'18\' height=\'18\' rx=\'2\'/><circle cx=\'8.5\' cy=\'8.5\' r=\'1.5\'/><polyline points=\'21 15 16 10 5 21\'/></svg><span style=\'font-size:0.6rem; font-weight:600; margin-top:2px;\'><?= $itemExt ?></span></div>';">
                                 <?php else: ?>
                                     <span style="font-size: 0.72rem; color: #64748b; font-weight: 700;">
                                         <?= $itemExt ?>
@@ -213,7 +222,85 @@ ob_start();
     <?php endif; ?>
 </div>
 
+<!-- 图片放大查看灯箱组件 (Image Lightbox Modal) -->
+<div id="image-lightbox-modal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); z-index: 99999; align-items: center; justify-content: center; padding: 24px;" onclick="closeImageLightbox(event)">
+    <div style="background: #ffffff; border-radius: 12px; max-width: 90vw; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); position: relative;" onclick="event.stopPropagation()">
+        <!-- 头部标题栏 -->
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; gap: 16px;">
+            <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+                <span id="lb-ext-badge" style="font-size: 0.72rem; font-weight: 700; background: #e0f2fe; color: #0284c7; padding: 2px 8px; border-radius: 4px;">PNG</span>
+                <span id="lb-title" style="font-size: 0.9rem; font-weight: 700; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 420px;">图片预览</span>
+                <span id="lb-size" style="font-size: 0.78rem; color: #64748b;">(0 KB)</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <a id="lb-open-tab" href="#" target="_blank" class="btn btn-outline btn-sm" style="padding: 4px 10px; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 4px;">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                    <span>新窗口打开</span>
+                </a>
+                <button type="button" onclick="copyLightboxUrl()" class="btn btn-outline btn-sm" style="padding: 4px 10px; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 4px;">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    <span>复制链接</span>
+                </button>
+                <button type="button" onclick="closeImageLightbox()" style="background: none; border: none; font-size: 1.4rem; line-height: 1; color: #64748b; cursor: pointer; padding: 4px 8px; border-radius: 6px; transition: color 0.2s;" onmouseover="this.style.color='#0f172a'" onmouseout="this.style.color='#64748b'" title="关闭 (Esc)">
+                    ✕
+                </button>
+            </div>
+        </div>
+
+        <!-- 图像展示主体 -->
+        <div style="flex: 1; display: flex; align-items: center; justify-content: center; background: #0f172a; padding: 16px; overflow: auto; min-height: 260px;">
+            <img id="lb-img" src="" alt="放大预览" style="max-width: 100%; max-height: calc(85vh - 100px); object-fit: contain; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+        </div>
+    </div>
+</div>
+
 <script>
+let currentLightboxUrl = '';
+
+function openImageLightbox(url, title, ext, size) {
+    currentLightboxUrl = url;
+    document.getElementById('lb-img').src = url;
+    document.getElementById('lb-title').innerText = title;
+    document.getElementById('lb-title').title = title;
+    document.getElementById('lb-ext-badge').innerText = ext || 'IMG';
+    document.getElementById('lb-size').innerText = size ? `(${size})` : '';
+    document.getElementById('lb-open-tab').href = url;
+    
+    const modal = document.getElementById('image-lightbox-modal');
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+
+function closeImageLightbox(e) {
+    if (e && e.target !== document.getElementById('image-lightbox-modal') && !e.target.closest('button[title*="关闭"]')) {
+        return;
+    }
+    const modal = document.getElementById('image-lightbox-modal');
+    modal.style.display = 'none';
+    document.getElementById('lb-img').src = '';
+    document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        const modal = document.getElementById('image-lightbox-modal');
+        if (modal && modal.style.display === 'flex') {
+            closeImageLightbox();
+        }
+    }
+});
+
+async function copyLightboxUrl() {
+    if (!currentLightboxUrl) return;
+    const fullUrl = window.location.origin + currentLightboxUrl;
+    try {
+        await navigator.clipboard.writeText(fullUrl);
+        alert('已复制图片直链到剪贴板：\n' + fullUrl);
+    } catch (e) {
+        prompt('请手动复制图片链接：', fullUrl);
+    }
+}
+
 async function deleteSingleMedia(id) {
     if (!confirm('确定删除此附件文件及其数据库记录？')) return;
     const form = new FormData();
