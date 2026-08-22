@@ -570,11 +570,17 @@ class AdminController {
                 }
             }
 
+            // 处理自定义导航数据 (JSON 字符串)
+            if (isset($data['custom_nav'])) {
+                $data['custom_nav'] = trim($data['custom_nav']);
+            }
+
             Setting::updateMultiple($data);
             $message = '系统设置已保存成功！';
         }
 
         $settings = Setting::getAll();
+        $categories = Category::getAll();
         require VIEW_PATH . '/admin/settings.php';
     }
 

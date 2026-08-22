@@ -4,6 +4,7 @@
 $siteName = $siteSettings['site_name'] ?? '技术思维棱镜';
 $siteSubtitle = $siteSettings['site_subtitle'] ?? '';
 $siteLogo = $siteSettings['site_logo'] ?? '';
+$customNav = !empty($siteSettings['custom_nav']) ? json_decode($siteSettings['custom_nav'], true) : null;
 ?>
 <!DOCTYPE html>
 <html lang="zh-CN">
@@ -35,13 +36,40 @@ $siteLogo = $siteSettings['site_logo'] ?? '';
         </a>
 
         <nav class="nav-links">
-            <a href="/" class="<?= empty($_GET['cate']) && empty($_GET['tag']) ? 'active' : '' ?>">全部文章</a>
-            <?php if (!empty($categories)): ?>
-                <?php foreach ($categories as $cat): ?>
-                    <a href="/?cate=<?= $cat['cate_ID'] ?>" class="<?= (isset($_GET['cate']) && (int)$_GET['cate'] === (int)$cat['cate_ID']) ? 'active' : '' ?>">
-                        <?= htmlspecialchars($cat['cate_Name']) ?>
+            <?php if (is_array($customNav) && !empty($customNav)): ?>
+                <?php 
+                $currentUri = $_SERVER['REQUEST_URI'] ?? '/';
+                foreach ($customNav as $nav): 
+                    $navName = trim($nav['name'] ?? '');
+                    $navUrl = trim($nav['url'] ?? '/');
+                    $navTarget = ($nav['target'] ?? '_self') === '_blank' ? '_blank' : '_self';
+                    if (empty($navName)) continue;
+
+                    $isActive = false;
+                    if ($navUrl === '/' && empty($_GET['cate']) && empty($_GET['tag']) && $currentUri === '/') {
+                        $isActive = true;
+                    } elseif ($navUrl === $currentUri) {
+                        $isActive = true;
+                    } elseif (!empty($_GET['cate']) && strpos($navUrl, 'cate=' . (int)$_GET['cate']) !== false) {
+                        $isActive = true;
+                    }
+                ?>
+                    <a href="<?= htmlspecialchars($navUrl) ?>" 
+                       target="<?= $navTarget ?>" 
+                       class="<?= $isActive ? 'active' : '' ?>">
+                        <?= htmlspecialchars($navName) ?>
                     </a>
                 <?php endforeach; ?>
+            <?php else: ?>
+                <!-- 默认导航：全部文章 + 全部分类 -->
+                <a href="/" class="<?= empty($_GET['cate']) && empty($_GET['tag']) ? 'active' : '' ?>">全部文章</a>
+                <?php if (!empty($categories)): ?>
+                    <?php foreach ($categories as $cat): ?>
+                        <a href="/?cate=<?= $cat['cate_ID'] ?>" class="<?= (isset($_GET['cate']) && (int)$_GET['cate'] === (int)$cat['cate_ID']) ? 'active' : '' ?>">
+                            <?= htmlspecialchars($cat['cate_Name']) ?>
+                        </a>
+                    <?php endforeach; ?>
+                <?php endif; ?>
             <?php endif; ?>
         </nav>
     </div>
