@@ -1,17 +1,29 @@
 <?php
 /**
- * Z-Blog Database & SQL Dump Cleaner Tool
+ * Z-Blog 自动化归整与数据库迁移瘦身工具 (migrate_zblog.php)
  * 
- * 功能：
- * 1. 自动备份当前数据库（SQLite / MySQL）
- * 2. 清理完全未引用的 9 张扩展/配置/评论/点赞表
- * 3. 精简 3 张核心表（zbp_post, zbp_category, zbp_tag）中的冗余字段（全平台全版本 SQLite/MySQL 兼容）
- * 4. 执行 VACUUM 释放物理空间并重建索引
- * 5. 支持将 SQL 转储文件（如 giraff.sql）清洗并导出为轻量纯净版 SQL
+ * 核心功能：
+ * 一、 目录与文件自动化规整：
+ *   1. 将根目录下原 Z-Blog 旧系统目录（如 zb_system/ 等）安全归档移动到 old_zblog/
+ *   2. 将 zb_users/ 目录重命名为 users/
+ *   3. 将 old_zblog/zb_system/image/filetype 附件图标拷贝同步到 users/filetype/
+ *   4. 将 users/ 目录中除 upload/、filetype/、c_option.php 之外的所有历史插件/主题/缓存文件归档移动到 old_zblog/zb_users/
+ * 
+ * 二、 数据库深度清洗与自适应排版优化：
+ *   1. 自动安全备份当前活跃数据库（SQLite / MySQL）
+ *   2. 清理完全未引用的冗余数据表与核心业务表中的废弃字段
+ *   3. 批量将数据库中的 zb_users/upload/ 和 zb_system/image/filetype/ 路径规范化为 users/upload/ 与 users/filetype/
+ *   4. 批量清洗文章中的定宽/高与禁止换行等排版限制
+ *   5. 执行 VACUUM 释放磁盘空间并重建索引
+ * 
+ * 三、 SQL 转储文件清洗：
+ *   支持将原始 SQL 转储文件（如 giraff.sql）清洗导出为纯净版 SQL
  * 
  * 运行方式：
- * - 命令行执行：php -c php.ini clean_db.php
- * - 或通过参数清洗 SQL 文件：php -c php.ini clean_db.php --clean-sql=giraff.sql
+ *   php -c php.ini migrate_zblog.php                     # 全量自动规整与数据库迁移
+ *   php -c php.ini migrate_zblog.php --files-only        # 仅执行目录与文件规整
+ *   php -c php.ini migrate_zblog.php --db-only           # 仅执行数据库清洗与路径迁移
+ *   php -c php.ini migrate_zblog.php --clean-sql=...     # 清洗指定的 SQL 转储文件
  */
 
 require_once __DIR__ . '/app/Config.php';
@@ -28,7 +40,7 @@ spl_autoload_register(function ($class) {
 
 use App\Database;
 
-// 定义待清理的无用表（保留核心表与评论表 zbp_comment）
+// 定义待清理的无用表
 $tablesToDrop = [
     'zbp_member',
     'zbp_module',
@@ -73,22 +85,23 @@ $columnsToDrop = [
 ];
 
 // 命令行参数处理
-$opts = getopt('', ['clean-sql:', 'migrate-paths', 'help']);
+$opts = getopt('', ['clean-sql:', 'files-only', 'db-only', 'migrate-paths', 'help']);
 if (isset($opts['help'])) {
     echo <<<HELP
-Z-Blog 数据库瘦身与清理工具
+Z-Blog 自动化归整与数据库迁移瘦身工具 (migrate_zblog.php)
 
 用法：
-  php -c php.ini clean_db.php                     执行当前活跃数据库（SQLite/MySQL）的瘦身、自适应排版优化与路径迁移
-  php -c php.ini clean_db.php --migrate-paths     单独执行路径迁移 (zb_users -> users, zb_system/image/filetype -> users/filetype)
-  php -c php.ini clean_db.php --clean-sql=giraff.sql 清洗 SQL 转储文件并导出为 giraff_cleaned.sql
+  php -c php.ini migrate_zblog.php                     执行全量目录规整、数据库瘦身、自适应排版优化与路径迁移
+  php -c php.ini migrate_zblog.php --files-only        仅执行目录与文件自动化规整
+  php -c php.ini migrate_zblog.php --db-only           仅执行数据库清洗、排版优化与路径迁移
+  php -c php.ini migrate_zblog.php --clean-sql=giraff.sql 清洗 SQL 转储文件并导出为 giraff_cleaned.sql
 
 HELP;
     exit(0);
 }
 
 echo "===============================================================\n";
-echo "       Z-Blog 数据库轻量化瘦身与冗余清理工具\n";
+echo "       Z-Blog 自动化归整与数据库迁移瘦身工具 (migrate_zblog.php)\n";
 echo "===============================================================\n\n";
 
 // 模式 1：处理指定 SQL 文件
@@ -101,8 +114,26 @@ if (!empty($opts['clean-sql'])) {
     exit(0);
 }
 
-// 模式 2：处理当前系统配置的数据库
+// 模式 2：执行目录与文件自动化规整
+$doFiles = !isset($opts['db-only']);
+$doDb = !isset($opts['files-only']);
+
+if ($doFiles) {
+    echo "【第一部分：Z-Blog 目录与文件自动化规整】\n";
+    reorganizeZblogDirectories();
+    echo "\n";
+}
+
+if (!$doDb) {
+    echo "===============================================================\n";
+    echo "🎉 目录与文件规整完毕！\n";
+    echo "===============================================================\n";
+    exit(0);
+}
+
+// 模式 3：执行数据库迁移与清洗
 try {
+    echo "【第二部分：数据库深度清洗与路径迁移】\n";
     $pdo = Database::getConn();
     $config = require APP_PATH . '/Config.php';
     $driver = $config['db_driver'] ?? 'sqlite';
@@ -120,11 +151,11 @@ try {
             echo "   ✅ SQLite 数据库已备份至: " . basename($backupPath) . " (" . formatSize(filesize($backupPath)) . ")\n";
         }
     } else {
-        echo "   ℹ️ 当前为 MySQL 模式，请确保已保留 giraff.sql 原始备份。\n";
+        echo "   ℹ️ 当前为 MySQL 模式，请确保已保留原始 SQL 备份。\n";
     }
 
     // 清理无用表
-    echo "\n3. 清理完全未引用的 9 张冗余表...\n";
+    echo "\n3. 清理完全未引用的 8 张冗余表...\n";
     $droppedTablesCount = 0;
     foreach ($tablesToDrop as $table) {
         try {
@@ -169,15 +200,10 @@ try {
         }
     }
 
-    // 5. 迁移与重命名目录及数据库中路径 (zb_users/upload -> users/upload, zb_system/image/filetype -> users/filetype)
-    echo "\n5. 规范化物理目录与数据库资源路径 (zb_users -> users, zb_system/image/filetype -> users/filetype)...\n";
-    $pathRes = migratePathsToUsers($pdo, $driver);
-    echo "   ✅ 路径迁移处理完毕！共更新 {$pathRes['updated_posts']} 篇文章中的资源路径，物理目录: {$pathRes['dir_status']}\n";
-
-    if (!empty($opts['migrate-paths'])) {
-        echo "\n🎉 单独路径迁移任务执行完毕！\n";
-        exit(0);
-    }
+    // 5. 迁移数据库中路径 (zb_users/upload -> users/upload, zb_system/image/filetype -> users/filetype)
+    echo "\n5. 规范化数据库资源路径 (zb_users -> users, zb_system/image/filetype -> users/filetype)...\n";
+    $pathRes = migrateDatabasePaths($pdo);
+    echo "   ✅ 数据库路径规范化完成！共更新 {$pathRes['updated_posts']} 篇文章中的资源路径\n";
 
     // 6. 清洗全站文章的定宽/高与禁止换行等排版限制
     echo "\n6. 批量清洗文章中的图片/表格长宽限制与 nowrap 禁止换行...\n";
@@ -208,7 +234,7 @@ try {
     }
 
     echo "\n===============================================================\n";
-    echo "🎉 数据库瘦身、自适应排版与路径现代化规范优化完毕！\n";
+    echo "🎉 Z-Blog 自动化规整、数据库瘦身与路径现代化迁移全部完毕！\n";
     echo "   - 共删除无用数据表: {$droppedTablesCount} 个\n";
     echo "   - 共剔除冗余数据字段: {$droppedColsCount} 个\n";
     echo "   - 规范化路径文章数: {$pathRes['updated_posts']} 篇\n";
@@ -218,6 +244,181 @@ try {
 
 } catch (\Exception $e) {
     echo "\n❌ 执行异常: " . $e->getMessage() . "\n";
+}
+
+/**
+ * 核心功能：自动化规整 Z-Blog 物理目录与文件
+ */
+function reorganizeZblogDirectories(): void {
+    $root = ROOT_PATH;
+    $oldZblogDir = $root . '/old_zblog';
+    if (!is_dir($oldZblogDir)) {
+        @mkdir($oldZblogDir, 0777, true);
+    }
+
+    // 1. 除了 zb_users，把根目录下的原生 Z-Blog 历史目录（如 zb_system, zb_install 等）和旧文件移动到 old_zblog/
+    echo "1. 归档根目录旧 Z-Blog 系统文件至 old_zblog/...\n";
+    $legacyDirsToMove = ['zb_system', 'zb_install'];
+    foreach ($legacyDirsToMove as $ld) {
+        $sourcePath = $root . '/' . $ld;
+        $destPath = $oldZblogDir . '/' . $ld;
+        if (is_dir($sourcePath)) {
+            if (is_dir($destPath)) {
+                copyDirRecursive($sourcePath, $destPath);
+                removeDirRecursive($sourcePath);
+            } else {
+                @rename($sourcePath, $destPath);
+            }
+            echo "   📦 已将 {$ld}/ 移动至 old_zblog/{$ld}/\n";
+        }
+    }
+
+    // 归档根目录遗留的旧 Z-Blog 单文件 (若存在)
+    $legacyFiles = ['search.php', 'feed.php', 'admin.php'];
+    foreach ($legacyFiles as $lf) {
+        $sourceFile = $root . '/' . $lf;
+        if (file_exists($sourceFile)) {
+            @rename($sourceFile, $oldZblogDir . '/' . $lf);
+            echo "   📄 已将 {$lf} 移动至 old_zblog/{$lf}\n";
+        }
+    }
+
+    // 2. 把 zb_users 目录改名为 users
+    echo "2. 将 zb_users/ 目录规范化重命名为 users/...\n";
+    $zbUsersDir = $root . '/zb_users';
+    $usersDir = $root . '/users';
+    if (is_dir($zbUsersDir)) {
+        if (!is_dir($usersDir)) {
+            @rename($zbUsersDir, $usersDir);
+            echo "   ✅ 已将 zb_users/ 重命名为 users/\n";
+        } else {
+            // 合并文件
+            copyDirRecursive($zbUsersDir, $usersDir);
+            removeDirRecursive($zbUsersDir);
+            echo "   ✅ 已将 zb_users/ 内容合并并规范化至 users/\n";
+        }
+    } else {
+        echo "   ℹ️ users/ 目录已就绪\n";
+    }
+
+    // 确保 users/upload 和 users/filetype 物理目录存在
+    if (!is_dir($usersDir . '/upload')) @mkdir($usersDir . '/upload', 0777, true);
+    if (!is_dir($usersDir . '/filetype')) @mkdir($usersDir . '/filetype', 0777, true);
+
+    // 3. 把 old_zblog/zb_system/image/filetype 复制到 users/filetype
+    echo "3. 提取并同步文件类型图标到 users/filetype/...\n";
+    $filetypeSources = [
+        $oldZblogDir . '/zb_system/image/filetype',
+        $root . '/zb_system/image/filetype',
+        $usersDir . '/plugin/Neditor/dialogs/attachment/fileTypeImages',
+        $oldZblogDir . '/zb_users/plugin/Neditor/dialogs/attachment/fileTypeImages'
+    ];
+    $syncedIconCount = 0;
+    foreach ($filetypeSources as $fSrc) {
+        if (is_dir($fSrc)) {
+            $files = scandir($fSrc);
+            foreach ($files as $f) {
+                if ($f === '.' || $f === '..') continue;
+                $sFile = $fSrc . '/' . $f;
+                $dFile = $usersDir . '/filetype/' . $f;
+                if (is_file($sFile) && !file_exists($dFile)) {
+                    @copy($sFile, $dFile);
+                    $syncedIconCount++;
+                }
+            }
+        }
+    }
+    echo "   ✅ 图标库就绪！已同步并就绪 {$syncedIconCount} 个历史文件类型图标\n";
+
+    // 4. 把 users 目录中除了 upload (或 uploads)、filetype、c_option.php 移动到 old_zblog/zb_users
+    echo "4. 净化 users/ 目录，将历史插件/主题/缓存归档至 old_zblog/zb_users/...\n";
+    $oldZbUsersDir = $oldZblogDir . '/zb_users';
+    if (!is_dir($oldZbUsersDir)) {
+        @mkdir($oldZbUsersDir, 0777, true);
+    }
+
+    if (is_dir($usersDir)) {
+        $allowedInUsers = ['upload', 'uploads', 'filetype', 'c_option.php', '.', '..'];
+        $items = scandir($usersDir);
+        $archivedItemsCount = 0;
+        foreach ($items as $item) {
+            if (in_array(strtolower($item), array_map('strtolower', $allowedInUsers))) {
+                continue;
+            }
+            $itemPath = $usersDir . '/' . $item;
+            $destPath = $oldZbUsersDir . '/' . $item;
+            if (is_dir($itemPath)) {
+                if (is_dir($destPath)) {
+                    copyDirRecursive($itemPath, $destPath);
+                    removeDirRecursive($itemPath);
+                } else {
+                    @rename($itemPath, $destPath);
+                }
+                echo "   📦 已归档 users/{$item}/ -> old_zblog/zb_users/{$item}/\n";
+                $archivedItemsCount++;
+            } elseif (is_file($itemPath)) {
+                @rename($itemPath, $destPath);
+                echo "   📄 已归档 users/{$item} -> old_zblog/zb_users/{$item}\n";
+                $archivedItemsCount++;
+            }
+        }
+        if ($archivedItemsCount === 0) {
+            echo "   ℹ️ users/ 目录已处于极致纯净状态 (仅保留 upload/、filetype/ 与 c_option.php)\n";
+        } else {
+            echo "   ✅ 已成功归档 {$archivedItemsCount} 个旧插件/主题/缓存项至 old_zblog/zb_users/\n";
+        }
+    }
+}
+
+/**
+ * 辅助函数：规范化数据库文章路径
+ */
+function migrateDatabasePaths(\PDO $pdo): array {
+    $posts = $pdo->query("SELECT log_ID, log_Content, log_Intro FROM zbp_post")->fetchAll(\PDO::FETCH_ASSOC);
+    $updated = 0;
+    $updateStmt = $pdo->prepare("UPDATE zbp_post SET log_Content = ?, log_Intro = ? WHERE log_ID = ?");
+
+    foreach ($posts as $post) {
+        $c = $post['log_Content'] ?? '';
+        $intro = $post['log_Intro'] ?? '';
+
+        $newC = str_replace(
+            [
+                'zb_users/upload/',
+                'zb_system/image/filetype/',
+                'zb_users/plugin/Neditor/dialogs/attachment/fileTypeImages/'
+            ],
+            [
+                'users/upload/',
+                'users/filetype/',
+                'users/filetype/'
+            ],
+            $c
+        );
+
+        $newIntro = str_replace(
+            [
+                'zb_users/upload/',
+                'zb_system/image/filetype/',
+                'zb_users/plugin/Neditor/dialogs/attachment/fileTypeImages/'
+            ],
+            [
+                'users/upload/',
+                'users/filetype/',
+                'users/filetype/'
+            ],
+            $intro
+        );
+
+        if ($newC !== $c || $newIntro !== $intro) {
+            $updateStmt->execute([$newC, $newIntro, $post['log_ID']]);
+            $updated++;
+        }
+    }
+
+    return [
+        'updated_posts' => $updated
+    ];
 }
 
 /**
@@ -286,6 +487,43 @@ function getTableColumns(\PDO $pdo, string $driver, string $table): array {
         }
     } catch (\Exception $e) {}
     return $cols;
+}
+
+/**
+ * 辅助函数：递归拷贝目录
+ */
+function copyDirRecursive(string $src, string $dst): void {
+    if (!is_dir($src)) return;
+    $dir = opendir($src);
+    @mkdir($dst, 0777, true);
+    while (false !== ($file = readdir($dir))) {
+        if (($file != '.') && ($file != '..')) {
+            if (is_dir($src . '/' . $file)) {
+                copyDirRecursive($src . '/' . $file, $dst . '/' . $file);
+            } else {
+                copy($src . '/' . $file, $dst . '/' . $file);
+            }
+        }
+    }
+    closedir($dir);
+}
+
+/**
+ * 辅助函数：递归删除目录
+ */
+function removeDirRecursive(string $dir): void {
+    if (!is_dir($dir)) return;
+    $files = scandir($dir);
+    foreach ($files as $file) {
+        if ($file === '.' || $file === '..') continue;
+        $path = $dir . '/' . $file;
+        if (is_dir($path)) {
+            removeDirRecursive($path);
+        } else {
+            @unlink($path);
+        }
+    }
+    @rmdir($dir);
 }
 
 /**
@@ -364,100 +602,3 @@ function cleanSqlDumpFile(string $filePath, array $tablesToDrop, array $columnsT
     echo "   - 处理后大小: " . formatSize($newLen) . "\n";
     echo "   - 瘦身体积: " . formatSize($origLen - $newLen) . "\n";
 }
-
-/**
- * 辅助函数：规范化物理目录结构与数据库所有文章中路径
- */
-function migratePathsToUsers(\PDO $pdo, string $driver): array {
-    $dirStatus = '已处于最新 users/ 结构';
-
-    // 1. 物理目录重命名 (zb_users -> users)
-    $oldDir = ROOT_PATH . '/zb_users';
-    $newDir = ROOT_PATH . '/users';
-    if (is_dir($oldDir)) {
-        if (!is_dir($newDir)) {
-            @rename($oldDir, $newDir);
-            $dirStatus = '已将 zb_users/ 目录重命名为 users/';
-        } else {
-            $oldUpload = $oldDir . '/upload';
-            $newUpload = $newDir . '/upload';
-            if (is_dir($oldUpload)) {
-                @mkdir($newUpload, 0777, true);
-                copyDirRecursive($oldUpload, $newUpload);
-            }
-            @rmdir($oldDir);
-            $dirStatus = '已将 zb_users/ 合并迁移至 users/';
-        }
-    }
-
-    // 确保 users/upload 和 users/filetype 物理目录存在
-    if (!is_dir(ROOT_PATH . '/users/upload')) @mkdir(ROOT_PATH . '/users/upload', 0777, true);
-    if (!is_dir(ROOT_PATH . '/users/filetype')) @mkdir(ROOT_PATH . '/users/filetype', 0777, true);
-
-    // 2. 数据库批量更新文章内容中的历史路径
-    $posts = $pdo->query("SELECT log_ID, log_Content, log_Intro FROM zbp_post")->fetchAll(\PDO::FETCH_ASSOC);
-    $updated = 0;
-    $updateStmt = $pdo->prepare("UPDATE zbp_post SET log_Content = ?, log_Intro = ? WHERE log_ID = ?");
-
-    foreach ($posts as $post) {
-        $c = $post['log_Content'] ?? '';
-        $intro = $post['log_Intro'] ?? '';
-
-        $newC = str_replace(
-            [
-                'zb_users/upload/',
-                'zb_system/image/filetype/',
-                'zb_users/plugin/Neditor/dialogs/attachment/fileTypeImages/'
-            ],
-            [
-                'users/upload/',
-                'users/filetype/',
-                'users/filetype/'
-            ],
-            $c
-        );
-
-        $newIntro = str_replace(
-            [
-                'zb_users/upload/',
-                'zb_system/image/filetype/',
-                'zb_users/plugin/Neditor/dialogs/attachment/fileTypeImages/'
-            ],
-            [
-                'users/upload/',
-                'users/filetype/',
-                'users/filetype/'
-            ],
-            $intro
-        );
-
-        if ($newC !== $c || $newIntro !== $intro) {
-            $updateStmt->execute([$newC, $newIntro, $post['log_ID']]);
-            $updated++;
-        }
-    }
-
-    return [
-        'updated_posts' => $updated,
-        'dir_status' => $dirStatus
-    ];
-}
-
-/**
- * 辅助函数：递归拷贝目录
- */
-function copyDirRecursive(string $src, string $dst): void {
-    $dir = opendir($src);
-    @mkdir($dst, 0777, true);
-    while (false !== ($file = readdir($dir))) {
-        if (($file != '.') && ($file != '..')) {
-            if (is_dir($src . '/' . $file)) {
-                copyDirRecursive($src . '/' . $file, $dst . '/' . $file);
-            } else {
-                copy($src . '/' . $file, $dst . '/' . $file);
-            }
-        }
-    }
-    closedir($dir);
-}
-
