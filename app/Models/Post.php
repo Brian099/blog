@@ -38,13 +38,10 @@ class Post {
             });
         }
 
-        $tree = [];
-        foreach ($rows as $row) {
-            $year = Helpers::getYear((int)$row['log_PostTime']);
-            if (!isset($tree[$year])) {
-                $tree[$year] = [];
-            }
+        $topArticles = [];
+        $yearGroups = [];
 
+        foreach ($rows as $row) {
             $isProtected = false;
             if (!empty($row['log_Meta'])) {
                 $meta = json_decode($row['log_Meta'], true);
@@ -55,7 +52,7 @@ class Post {
                 }
             }
 
-            $tree[$year][] = [
+            $item = [
                 'id' => (int)$row['log_ID'],
                 'title' => $row['log_Title'],
                 'post_time' => (int)$row['log_PostTime'],
@@ -64,6 +61,29 @@ class Post {
                 'views' => (int)$row['log_ViewNums'],
                 'is_protected' => $isProtected
             ];
+
+            if (!empty($row['log_IsTop'])) {
+                // 置顶文章：汇总在最顶层专属分组
+                $topArticles[] = $item;
+            } else {
+                // 常规文章：按年份倒序分组
+                $year = Helpers::getYear((int)$row['log_PostTime']);
+                if (!isset($yearGroups[$year])) {
+                    $yearGroups[$year] = [];
+                }
+                $yearGroups[$year][] = $item;
+            }
+        }
+
+        $tree = [];
+        // 若存在置顶文章，固定在整个列表最顶部
+        if (!empty($topArticles)) {
+            $tree['📌 置顶推荐'] = $topArticles;
+        }
+
+        // 常规文章按年份显示
+        foreach ($yearGroups as $year => $posts) {
+            $tree[$year] = $posts;
         }
 
         return $tree;

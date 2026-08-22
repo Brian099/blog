@@ -38,8 +38,9 @@
                 </div>
             <?php else: ?>
                 <?php foreach ($tree as $year => $posts): ?>
-                    <div class="year-group">
-                        <div class="year-title">
+                    <?php $isTopGroup = (strpos($year, '置顶') !== false); ?>
+                    <div class="year-group <?= $isTopGroup ? 'pinned-group' : '' ?>">
+                        <div class="year-title" <?= $isTopGroup ? 'style="color: #0284c7; font-weight: 700;"' : '' ?>>
                             <span><?= $year ?></span>
                             <span class="year-count"><?= count($posts) ?> 篇</span>
                         </div>
