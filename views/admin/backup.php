@@ -72,20 +72,20 @@ ob_start();
         </div>
     <?php else: ?>
         <div style="overflow-x: auto;">
-            <table class="data-table" style="margin: 0;">
+            <table class="data-table" style="margin: 0; width: 100%;">
                 <thead>
                     <tr>
-                        <th>备份文件名</th>
-                        <th>格式类型</th>
-                        <th>体积大小</th>
-                        <th>备份时间</th>
-                        <th style="text-align: right;">快捷操作</th>
+                        <th style="text-align: left; padding-left: 20px;">备份文件名</th>
+                        <th style="width: 140px; text-align: left;">格式类型</th>
+                        <th style="width: 130px; text-align: left;">体积大小</th>
+                        <th style="width: 180px; text-align: left;">备份时间</th>
+                        <th style="width: 180px; text-align: right; padding-right: 20px;">快捷操作</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php foreach ($backups as $b): ?>
                         <tr>
-                            <td>
+                            <td style="text-align: left; padding-left: 20px;">
                                 <div style="display: flex; align-items: center; gap: 10px;">
                                     <div style="width: 32px; height: 32px; border-radius: 8px; background: <?= $b['ext'] === 'sql' ? '#fef3c7' : '#e0e7ff' ?>; color: <?= $b['ext'] === 'sql' ? '#d97706' : '#4f46e5' ?>; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                                         <?php if ($b['ext'] === 'sql'): ?>
@@ -97,20 +97,20 @@ ob_start();
                                     <code style="font-family: ui-monospace, monospace; font-size: 0.85rem; font-weight: 700; color: var(--admin-text);"><?= htmlspecialchars($b['filename']) ?></code>
                                 </div>
                             </td>
-                            <td>
+                            <td style="text-align: left;">
                                 <?php if ($b['ext'] === 'sql'): ?>
                                     <span style="display: inline-block; font-size: 0.75rem; font-weight: 600; color: #b45309; background: #fffbeb; border: 1px solid #fde68a; padding: 2px 8px; border-radius: 6px;">SQL 转储</span>
                                 <?php else: ?>
                                     <span style="display: inline-block; font-size: 0.75rem; font-weight: 600; color: #059669; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 2px 8px; border-radius: 6px;">SQLite 库</span>
                                 <?php endif; ?>
                             </td>
-                            <td>
+                            <td style="text-align: left;">
                                 <span style="font-size: 0.88rem; font-weight: 700; color: var(--admin-text); font-family: ui-monospace, monospace;"><?= $b['size_formatted'] ?></span>
                             </td>
-                            <td style="color: var(--admin-text-muted); font-size: 0.82rem;">
+                            <td style="text-align: left; color: var(--admin-text-muted); font-size: 0.82rem;">
                                 <?= $b['time_formatted'] ?>
                             </td>
-                            <td style="text-align: right;">
+                            <td style="text-align: right; padding-right: 20px;">
                                 <div style="display: inline-flex; align-items: center; gap: 8px;">
                                     <a href="/admin/backup/download?file=<?= urlencode($b['filename']) ?>" class="btn btn-outline btn-sm" title="下载到本地电脑">
                                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
