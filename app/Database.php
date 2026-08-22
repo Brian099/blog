@@ -46,22 +46,33 @@ class Database {
                     self::$instance = new PDO($dsn, $m['username'] ?? 'root', $m['password'] ?? '', $options);
                     return self::$instance;
                 } catch (Exception $e) {
-                    // MySQL 无法连通
+                    // MySQL 无法连通，记录原因供抛出
+                    $lastError = $e->getMessage();
                 }
             }
 
-            // 若均未连通且系统未安装，自动重定向到安装引导程序
+            // 若处于 CLI、API、AJAX 或 /install/ 子路由中，抛出标准异常让调用者捕获并返回 JSON
             $uri = $_SERVER['REQUEST_URI'] ?? '';
-            if (strpos($uri, '/install') === false && php_sapi_name() !== 'cli') {
+            $isApiOrInstallAction = (
+                strpos($uri, '/install/') !== false ||
+                strpos($uri, '/api/') !== false ||
+                strpos($uri, '/admin/') !== false ||
+                (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false) ||
+                php_sapi_name() === 'cli'
+            );
+
+            if ($isApiOrInstallAction) {
+                $errDetail = isset($lastError) ? " (MySQL 错误: {$lastError})" : "";
+                throw new Exception("数据库连接失败：未检测到 SQLite (data/blog.db) 且无法连接 MySQL{$errDetail}。请先配置数据库或在安装向导中选择 SQLite。");
+            }
+
+            // 前台普通页面访问且未安装，自动重定向到安装向导
+            if (strpos($uri, '/install') === false) {
                 header('Location: /install');
                 exit;
             }
 
-            die("<div style='font-family:sans-serif;max-width:600px;margin:50px auto;padding:24px;border:1px solid #fecaca;background:#fef2f2;border-radius:8px;color:#991b1b;line-height:1.6;'>
-                <h3 style='margin-top:0;'>❌ 数据库未连接</h3>
-                <p>系统未检测到本地 SQLite 数据库文件 (<code>data/blog.db</code>)，且 MySQL 数据库无法连通。</p>
-                <p><a href='/install' style='display:inline-block;padding:8px 16px;background:#dc2626;color:#fff;text-decoration:none;border-radius:4px;font-weight:600;'>前往安装与迁移引导程序 &rarr;</a></p>
-            </div>");
+            throw new Exception("数据库未连接");
         }
         return self::$instance;
     }

@@ -18,10 +18,13 @@ if (!is_dir(UPLOAD_PATH)) {
 }
 
 // 自动检测并适配 Z-Blog 现有的 c_option.php 配置文件
-$zblogOptionFile = null;
 $possibleOptionPaths = [
+    ROOT_PATH . '/users/c_option.php',
     ROOT_PATH . '/zb_users/c_option.php',
     ROOT_PATH . '/c_option.php',
+    ROOT_PATH . '/old_zblog/zb_users/c_option.php',
+    ROOT_PATH . '/old_zblog/c_option.php',
+    dirname(ROOT_PATH) . '/users/c_option.php',
     dirname(ROOT_PATH) . '/zb_users/c_option.php',
     dirname(ROOT_PATH) . '/c_option.php'
 ];
