@@ -74,7 +74,7 @@ class InstallController {
     }
 
     /**
-     * 模式 A：从现有 Z-Blog 迁移并自动清洗
+     * 模式 A：从现有 Z-Blog 导入并自动执行全套规整与迁移
      */
     public function migrate(): void {
         header('Content-Type: application/json; charset=utf-8');
@@ -83,25 +83,10 @@ class InstallController {
             $pdo = Database::getConn();
             $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
 
-            // 1. 冗余表清理列表
-            $tablesToDrop = [
-                'zbp_member',
-                'zbp_module',
-                'zbp_plugin',
-                'zbp_guestbook',
-                'zbp_san_praise_sdk_basecount',
-                'zbp_san_praise_sdk_record',
-                'zbp_san_praise_sdk_token',
-                'zbp_config'
-            ];
-
-            $droppedTables = 0;
-            foreach ($tablesToDrop as $tbl) {
-                try {
-                    $pdo->exec("DROP TABLE IF EXISTS `{$tbl}`");
-                    $droppedTables++;
-                } catch (Exception $e) {}
-            }
+            // 1. 调用 ZblogMigrator 执行全套目录规整与数据库深度迁移
+            $migrateRes = \App\Models\ZblogMigrator::runAll($pdo);
+            $dirStats = $migrateRes['directories'] ?? [];
+            $dbStats = $migrateRes['database'] ?? [];
 
             // 2. 初始化 / 更新 sys_setting 表
             if ($driver === 'sqlite') {
@@ -146,10 +131,7 @@ class InstallController {
                 }
             }
 
-            // 4. 执行全站文章自适应排版与长宽限制批量清洗
-            $cleanStats = Post::batchCleanResponsive();
-
-            // 5. 写入安装锁
+            // 4. 写入安装锁
             @file_put_contents(DATA_PATH . '/install.lock', date('Y-m-d H:i:s') . " - Migrated from Z-Blog\n");
 
             // 统计文章与附件总数
@@ -158,14 +140,18 @@ class InstallController {
 
             echo json_encode([
                 'success' => true,
-                'message' => '从 Z-Blog 迁移并优化成功！',
+                'message' => '从 Z-Blog 自动化规整、迁移并优化成功！',
                 'data' => [
                     'driver' => $driver,
                     'total_posts' => $postCount,
                     'total_uploads' => $uploadCount,
-                    'cleaned_posts' => $cleanStats['updated_count'] ?? 0,
-                    'bytes_saved' => $cleanStats['bytes_saved'] ?? 0,
-                    'tables_dropped' => $droppedTables
+                    'cleaned_posts' => $dbStats['cleaned_responsive_posts'] ?? 0,
+                    'bytes_saved' => $dbStats['bytes_saved'] ?? 0,
+                    'tables_dropped' => $dbStats['tables_dropped'] ?? 0,
+                    'columns_dropped' => $dbStats['columns_dropped'] ?? 0,
+                    'updated_paths_posts' => $dbStats['updated_paths_posts'] ?? 0,
+                    'archived_items' => $dirStats['archived_items'] ?? 0,
+                    'synced_icons' => $dirStats['synced_icons'] ?? 0
                 ]
             ]);
         } catch (Exception $e) {

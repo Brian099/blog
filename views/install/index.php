@@ -476,8 +476,10 @@ async function handleInstall(e) {
             if (currentMode === 'migrate' && json.data) {
                 const d = json.data;
                 document.getElementById('res-desc').innerHTML = 
-                    `已成功保留 <strong>${d.total_posts}</strong> 篇文章与 <strong>${d.total_uploads}</strong> 个附件！<br>` +
-                    `剔除 ${d.tables_dropped} 个无用表，并自动完成 ${d.cleaned_posts} 篇自适应排版清洗。`;
+                    `已成功规范化目录并保留 <strong>${d.total_posts}</strong> 篇文章与 <strong>${d.total_uploads}</strong> 个附件！<br>` +
+                    `📦 归档旧插件/系统项: ${d.archived_items} 个 | 🎨 同步文件图标: ${d.synced_icons} 个<br>` +
+                    `🗑️ 剔除冗余表: ${d.tables_dropped} 个 | 冗余字段: ${d.columns_dropped} 个<br>` +
+                    `🔄 规范化路径文章: ${d.updated_paths_posts} 篇 | 📱 修复自适应排版: ${d.cleaned_posts} 篇`;
             } else {
                 document.getElementById('res-desc').innerText = json.message || '全新架构与示例文章已成功就绪！';
             }
