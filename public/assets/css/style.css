@@ -1040,3 +1040,17 @@ mark {
     font-size: 0.78rem;
   }
 }
+
+.friend-link-item {
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: all 0.15s ease;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+.friend-link-item:hover {
+  color: var(--primary) !important;
+  background-color: var(--bg-hover);
+  text-decoration: none;
+}

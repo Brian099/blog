@@ -113,6 +113,29 @@ $siteSettings = $siteSettings ?? \App\Models\Setting::getAll();
         
         <!-- Semantic Article Site Footer -->
         <footer class="article-site-footer">
+            <?php
+            $friendLinks = !empty($siteSettings['friend_links']) ? json_decode($siteSettings['friend_links'], true) : [];
+            if (!empty($friendLinks) && is_array($friendLinks)):
+            ?>
+                <div class="footer-friend-links" style="margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px dashed var(--border-color); display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 16px; font-size: 0.84rem;">
+                    <span style="color: var(--text-light); font-weight: 500; display: inline-flex; align-items: center; gap: 4px;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                        友情链接：
+                    </span>
+                    <?php foreach ($friendLinks as $fl): 
+                        $flName = trim($fl['name'] ?? '');
+                        $flUrl = trim($fl['url'] ?? '');
+                        $flTarget = ($fl['target'] ?? '_blank') === '_blank' ? '_blank' : '_self';
+                        $flDesc = trim($fl['desc'] ?? '');
+                        if (empty($flName) || empty($flUrl)) continue;
+                    ?>
+                        <a href="<?= htmlspecialchars($flUrl) ?>" target="<?= $flTarget ?>" rel="noopener noreferrer" class="friend-link-item" title="<?= htmlspecialchars($flDesc ?: $flName) ?>" style="color: var(--text-muted); text-decoration: none; transition: color 0.15s ease;">
+                            <?= htmlspecialchars($flName) ?>
+                        </a>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+
             <div class="footer-meta">
                 <span>© <?= date('Y') ?> <?= htmlspecialchars($siteSettings['site_name'] ?? '技术思维棱镜') ?></span>
                 <span>·</span>

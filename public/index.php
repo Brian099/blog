@@ -204,6 +204,10 @@ try {
             (new AdminController())->settings();
             break;
 
+        case '/admin/navigation':
+            (new AdminController())->navigation();
+            break;
+
         case '/admin/content-cleaner':
             (new AdminController())->contentCleaner();
             break;
