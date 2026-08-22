@@ -3,7 +3,7 @@ $pageTitle = '数据备份与转换';
 ob_start();
 ?>
 
-<div class="settings-container" style="max-width: 1080px; margin: 0 auto; padding-bottom: 40px;">
+<div style="width: 100%; padding-bottom: 40px;">
     
     <!-- 1. 顶部数据库运行状态概览卡片 (Hero Card) -->
     <div style="background: #ffffff; border-radius: 14px; padding: 22px 28px; border: 1px solid #e2e8f0; box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.04); margin-bottom: 28px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px; position: relative; overflow: hidden;">
