@@ -11,8 +11,8 @@ $siteSubtitle = $siteSettings['site_subtitle'] ?? '';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= isset($currentPost) && $currentPost ? htmlspecialchars($currentPost['title']) . ' - ' : '' ?><?= htmlspecialchars($siteName) ?><?= $siteSubtitle ? ' | ' . htmlspecialchars($siteSubtitle) : '' ?></title>
     <link rel="stylesheet" href="/assets/css/style.css">
-    <!-- Highlight.js for professional code highlighting (Localized) -->
-    <link rel="stylesheet" href="/assets/css/highlight.atom-one-dark.min.css">
+    <!-- Highlight.js for professional code highlighting (Localized Light Theme) -->
+    <link rel="stylesheet" href="/assets/css/highlight.github.min.css">
     <script src="/assets/js/highlight.min.js"></script>
     <script>window.SITE_NAME = <?= json_encode($siteName) ?>;</script>
 </head>
