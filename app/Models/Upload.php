@@ -94,13 +94,18 @@ class Upload {
             }
 
             // 计算相对 URL 与缩略图
-            $year = date('Y', $item['ul_PostTime'] > 0 ? $item['ul_PostTime'] : time());
-            $month = date('m', $item['ul_PostTime'] > 0 ? $item['ul_PostTime'] : time());
-            if (preg_match('/^(\d{4})(\d{2})/', $item['ul_Name'], $m)) {
-                $year = $m[1];
-                $month = $m[2];
+            $cleanName = ltrim($item['ul_Name'], '/');
+            if (strpos($cleanName, '/') !== false) {
+                $relPath = "/users/upload/" . $cleanName;
+            } else {
+                $year = date('Y', $item['ul_PostTime'] > 0 ? $item['ul_PostTime'] : time());
+                $month = date('m', $item['ul_PostTime'] > 0 ? $item['ul_PostTime'] : time());
+                if (preg_match('/^(\d{4})(\d{2})/', $cleanName, $m)) {
+                    $year = $m[1];
+                    $month = $m[2];
+                }
+                $relPath = "/users/upload/{$year}/{$month}/" . $cleanName;
             }
-            $relPath = "/users/upload/{$year}/{$month}/" . $item['ul_Name'];
 
             $processed[] = [
                 'id' => (int)$item['ul_ID'],

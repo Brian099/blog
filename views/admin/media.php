@@ -138,12 +138,16 @@ ob_start();
                             <?php endif; ?>
                         </td>
                         <td>
-                            <div style="width: 48px; height: 48px; border-radius: 6px; background: #f1f5f9; overflow: hidden; display: flex; align-items: center; justify-content: center; border: 1px solid #e2e8f0;">
+                            <div style="width: 48px; height: 48px; border-radius: 6px; background: #f8fafc; overflow: hidden; display: flex; align-items: center; justify-content: center; border: 1px solid #e2e8f0; flex-shrink: 0;">
+                                <?php 
+                                    $itemExt = strtoupper(pathinfo($tab === 'disk' ? $item['filename'] : $item['name'], PATHINFO_EXTENSION));
+                                    $itemImgUrl = $tab === 'disk' ? $item['web_url'] : $item['url'];
+                                ?>
                                 <?php if ($item['is_image']): ?>
-                                    <img src="<?= $tab === 'disk' ? $item['web_url'] : $item['url'] ?>" alt="<?= htmlspecialchars($tab === 'disk' ? $item['filename'] : $item['name']) ?>" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='/assets/images/file.svg'; this.style.padding='10px';">
+                                    <img src="<?= htmlspecialchars($itemImgUrl) ?>" alt="<?= htmlspecialchars($tab === 'disk' ? $item['filename'] : $item['name']) ?>" loading="lazy" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.onerror=null; this.parentElement.innerHTML='<div style=\'display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%; height:100%; color:#94a3b8;\'><svg width=\'18\' height=\'18\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'1.8\'><rect x=\'3\' y=\'3\' width=\'18\' height=\'18\' rx=\'2\'/><circle cx=\'8.5\' cy=\'8.5\' r=\'1.5\'/><polyline points=\'21 15 16 10 5 21\'/></svg><span style=\'font-size:0.6rem; font-weight:600; margin-top:2px;\'><?= $itemExt ?></span></div>';">
                                 <?php else: ?>
-                                    <span style="font-size: 0.75rem; color: #64748b; font-weight: 600; text-transform: uppercase;">
-                                        <?= pathinfo($tab === 'disk' ? $item['filename'] : $item['name'], PATHINFO_EXTENSION) ?>
+                                    <span style="font-size: 0.72rem; color: #64748b; font-weight: 700;">
+                                        <?= $itemExt ?>
                                     </span>
                                 <?php endif; ?>
                             </div>
