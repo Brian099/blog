@@ -586,6 +586,13 @@ class AdminController {
                 echo json_encode(['success' => true, 'data' => $res]);
             } else {
                 $scan = Post::scanResponsiveIssues();
+                echo json_encode(['success' => true, 'data' => $scan]);
+            }
+        } catch (\Throwable $e) {
+            echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+        }
+    }
+
     /**
      * 数据备份与转换管理页
      */
