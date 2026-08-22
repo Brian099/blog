@@ -182,13 +182,16 @@ window.submitPostUnlock = async function(e, postId) {
         const data = await res.json();
 
         if (data.success) {
-            const container = document.getElementById('article-content-wrapper') || document.getElementById('article-content-container');
+            const container = document.getElementById('article-content-wrapper');
             if (container) {
                 container.innerHTML = data.html;
                 if (data.title) document.title = data.title;
                 // 重新初始化代码高亮与灯箱
-                initCodeBlocks();
-                initLightbox();
+                initCodeHighlightAndCopy();
+                initImageLightbox();
+                // 平滑滚动到文章顶部
+                const mainArea = document.querySelector('.article-main');
+                if (mainArea) mainArea.scrollTop = 0;
             }
         } else {
             if (errorMsg) {
