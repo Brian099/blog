@@ -116,5 +116,5 @@ return [
     'c_option_source' => $zblogOptionFile,
     'c_option_has_mysql' => $cOptionMysqlAvailable,
     'sqlite_db_exists' => $sqliteExists,
-    'is_installed' => file_exists(DATA_PATH . '/install.lock') || $sqliteExists
+    'is_installed' => file_exists(DATA_PATH . '/install.lock')
 ];

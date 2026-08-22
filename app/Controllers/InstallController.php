@@ -13,7 +13,7 @@ class InstallController {
      */
     public function index(): void {
         $config = require APP_PATH . '/Config.php';
-        $isInstalled = file_exists(DATA_PATH . '/install.lock') && file_exists(DATA_PATH . '/blog.db');
+        $isInstalled = file_exists(DATA_PATH . '/install.lock');
         $force = isset($_GET['reinstall']) && $_GET['reinstall'] === '1';
 
         // 检测现有 Z-Blog c_option.php 配置

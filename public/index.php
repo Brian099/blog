@@ -68,11 +68,12 @@ if (strpos($path, '/assets/') === 0 || strpos($path, '/users/') === 0 || strpos(
     }
 }
 
-// Router Dispatch
-use App\Controllers\BlogController;
-use App\Controllers\SearchController;
-use App\Controllers\AdminController;
-use App\Controllers\InstallController;
+// 未安装时，除 /install 路由外，自动拦截并重定向至安装与迁移引导程序
+$isInstalled = file_exists(DATA_PATH . '/install.lock');
+if (!$isInstalled && strpos($path, '/install') !== 0) {
+    header('Location: /install');
+    exit;
+}
 
 try {
     switch ($path) {
