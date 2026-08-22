@@ -559,20 +559,23 @@ button, input {
   object-fit: contain;
 }
 
-/* Inline Attachment & Filetype Icons (Always Left-Aligned with Link) */
+/* Inline Attachment & Filetype Icons (Always Left-Aligned with Link, Crisp VS Code Vectors) */
 .article-body .filetype-icon,
 .article-body img[src*="filetype"],
 .article-body img[src*="icon_"],
 .article-body .ue-upload img {
   display: inline-block !important;
-  vertical-align: middle !important;
-  margin: 0 4px 0 0 !important;
+  vertical-align: -3px !important;
+  margin: 0 6px 0 0 !important;
+  width: 18px !important;
+  height: 18px !important;
+  max-width: 18px !important;
   max-height: 18px !important;
-  width: auto !important;
   box-shadow: none !important;
   border: none !important;
   border-radius: 0 !important;
   cursor: default !important;
+  flex-shrink: 0 !important;
 }
 
 .article-body .ue-upload {

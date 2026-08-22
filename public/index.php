@@ -65,7 +65,15 @@ if (strpos($path, '/assets/') === 0 || strpos($path, '/users/') === 0 || strpos(
                 'woff2' => 'font/woff2',
                 'ttf' => 'font/ttf'
             ];
-            header('Content-Type: ' . ($mimes[$ext] ?? 'application/octet-stream'));
+            $contentType = $mimes[$ext] ?? 'application/octet-stream';
+            // Auto detect SVG XML content for filetype icons (supports .svg / .png / .gif backward compatibility)
+            if (strpos($file, 'filetype') !== false) {
+                $headerChunk = file_get_contents($file, false, null, 0, 100);
+                if (strpos($headerChunk, '<svg') !== false || strpos($headerChunk, '<?xml') !== false) {
+                    $contentType = 'image/svg+xml';
+                }
+            }
+            header('Content-Type: ' . $contentType);
             header('Cache-Control: public, max-age=86400');
             readfile($file);
             exit;
