@@ -63,7 +63,7 @@ class BlogController {
 
         $ok = Post::unlock($id, $pwd);
         if ($ok) {
-            $post = Post::getDetail($id);
+            $post = Post::getDetail($id, true);
 
             // 渲染正文区域 HTML
             ob_start();

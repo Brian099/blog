@@ -72,7 +72,7 @@ class Post {
     /**
      * 获取单篇文章详情（包含分类、标签解析）
      */
-    public static function getDetail(int $id): ?array {
+    public static function getDetail(int $id, bool $forceUnlocked = false): ?array {
         $sql = "SELECT * FROM zbp_post WHERE log_ID = ?";
         $post = Database::fetchOne($sql, [$id]);
         if (!$post) return null;
@@ -115,7 +115,7 @@ class Post {
             $decoded = json_decode($post['log_Meta'], true);
             if (is_array($decoded)) {
                 $meta = $decoded;
-            } elseif (preg_match('/password[:=]([^\s;,]+)/i', $post['log_Meta'], $m)) {
+            } elseif (preg_match('/password[:=]([^\s;,]+)/i', (string)$post['log_Meta'], $m)) {
                 $meta['password'] = trim($m[1]);
             }
         }
@@ -123,14 +123,15 @@ class Post {
         $password = $meta['password'] ?? '';
         $isProtected = !empty($password);
 
-        // 检查当前访问者是否已在 Session 中解锁或为已登录管理员
+        // 独立文章密码校验（不存入 Session，刷新页面需重新输入）
         $isUnlocked = false;
         if (!$isProtected) {
             $isUnlocked = true;
         } else {
-            if (!empty($_SESSION['admin_logged_in'])) {
+            if ($forceUnlocked) {
                 $isUnlocked = true;
-            } elseif (!empty($_SESSION['unlocked_posts'][(int)$post['log_ID']])) {
+            } elseif (!empty($_SESSION['admin_logged_in'])) {
+                // 已登录的博客管理员可直接免密查看
                 $isUnlocked = true;
             }
         }
@@ -162,7 +163,7 @@ class Post {
     }
 
     /**
-     * 验证文章访问密码并解锁
+     * 验证文章访问密码
      */
     public static function unlock(int $id, string $inputPassword): bool {
         $post = self::getDetail($id);
@@ -170,15 +171,7 @@ class Post {
             return true;
         }
 
-        if (trim($inputPassword) === (string)$post['password']) {
-            if (!isset($_SESSION['unlocked_posts'])) {
-                $_SESSION['unlocked_posts'] = [];
-            }
-            $_SESSION['unlocked_posts'][$id] = true;
-            return true;
-        }
-
-        return false;
+        return (trim($inputPassword) === (string)$post['password']);
     }
 
     /**
