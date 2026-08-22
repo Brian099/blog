@@ -43,12 +43,12 @@ if (!empty($settings['friend_links'])) {
 <?php endif; ?>
 
 <!-- 模块 1：前台顶栏导航按钮管理表单 -->
-<form method="POST" action="/admin/navigation" id="nav-form" style="margin-bottom: 28px;">
+<form method="POST" action="/admin/navigation" id="nav-form" style="margin-bottom: 36px;">
     <input type="hidden" name="save_type" value="nav">
     <input type="hidden" name="custom_nav" id="custom_nav_input">
 
-    <div class="card" style="margin-bottom: 0;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 12px;">
+    <div class="card" style="margin-bottom: 0; padding: 24px 28px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 22px; flex-wrap: wrap; gap: 12px;">
             <div style="display: flex; align-items: center; gap: 12px;">
                 <div style="width: 36px; height: 36px; border-radius: 8px; background: #eff6ff; color: #0284c7; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
@@ -75,8 +75,8 @@ if (!empty($settings['friend_links'])) {
             </div>
         </div>
 
-        <div style="overflow-x: auto; border: 1px solid var(--admin-border); border-radius: var(--radius);">
-            <table class="table" style="margin-bottom: 0;">
+        <div style="overflow-x: auto; border: 1px solid var(--admin-border); border-radius: 8px; background: #fff;">
+            <table class="nav-table" style="margin-bottom: 0;">
                 <thead>
                     <tr>
                         <th style="width: 60px; text-align: center;">序号</th>
@@ -91,7 +91,7 @@ if (!empty($settings['friend_links'])) {
                 </tbody>
             </table>
         </div>
-        <div style="font-size: 0.78rem; color: var(--admin-text-muted); margin-top: 10px; line-height: 1.5;">
+        <div style="font-size: 0.8rem; color: var(--admin-text-muted); margin-top: 14px; line-height: 1.6;">
             💡 站内链接填写相对路径（如 <code>/</code>、<code>/?cate=1</code>、<code>/about</code>），外部链接请填写完整链接（如 <code>https://github.com</code>）。编辑完成后点击右上方「保存顶栏导航」独立生效。
         </div>
     </div>
@@ -102,8 +102,8 @@ if (!empty($settings['friend_links'])) {
     <input type="hidden" name="save_type" value="links">
     <input type="hidden" name="friend_links" id="friend_links_input">
 
-    <div class="card">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 12px;">
+    <div class="card" style="padding: 24px 28px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 22px; flex-wrap: wrap; gap: 12px;">
             <div style="display: flex; align-items: center; gap: 12px;">
                 <div style="width: 36px; height: 36px; border-radius: 8px; background: #f0fdf4; color: #16a34a; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
@@ -124,8 +124,8 @@ if (!empty($settings['friend_links'])) {
             </div>
         </div>
 
-        <div style="overflow-x: auto; border: 1px solid var(--admin-border); border-radius: var(--radius);">
-            <table class="table" style="margin-bottom: 0;">
+        <div style="overflow-x: auto; border: 1px solid var(--admin-border); border-radius: 8px; background: #fff;">
+            <table class="nav-table" style="margin-bottom: 0;">
                 <thead>
                     <tr>
                         <th style="width: 60px; text-align: center;">序号</th>
@@ -141,7 +141,7 @@ if (!empty($settings['friend_links'])) {
                 </tbody>
             </table>
         </div>
-        <div style="font-size: 0.78rem; color: var(--admin-text-muted); margin-top: 10px; line-height: 1.5;">
+        <div style="font-size: 0.8rem; color: var(--admin-text-muted); margin-top: 14px; line-height: 1.6;">
             💡 友情链接将展示在文章正文底部的版权信息上方，支持鼠标悬浮展示站点描述，默认以新窗口打开。编辑完成后点击右上方「保存友情链接」独立生效。
         </div>
     </div>
