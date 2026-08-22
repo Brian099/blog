@@ -27,33 +27,27 @@ if (!empty($settings['friend_links'])) {
 }
 ?>
 
-<form method="POST" action="/admin/navigation" id="navigation-form">
-    <!-- 顶部标题栏与保存按钮 -->
-    <div class="page-title-row">
-        <div>
-            <h2 class="page-title">导航与外链管理</h2>
-            <p class="page-subtitle">自定义前台页面顶部导航栏按钮、分类直达入口及页脚全局友情链接</p>
-        </div>
-        <div>
-            <button type="submit" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 24px; font-weight: 600; font-size: 0.92rem; box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
-                <span>保存导航与链接设置</span>
-            </button>
-        </div>
+<!-- 顶部标题栏 -->
+<div class="page-title-row">
+    <div>
+        <h2 class="page-title">导航与外链管理</h2>
+        <p class="page-subtitle">前台顶栏导航按钮与页脚友情链接支持独立配置与单独保存</p>
     </div>
+</div>
 
-    <?php if (!empty($message)): ?>
-        <div style="padding: 12px 18px; background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; border-radius: var(--radius); margin-bottom: 24px; font-weight: 500; display: flex; align-items: center; gap: 10px;">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-            <span><?= htmlspecialchars($message) ?></span>
-        </div>
-    <?php endif; ?>
+<?php if (!empty($message)): ?>
+    <div style="padding: 12px 18px; background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; border-radius: var(--radius); margin-bottom: 24px; font-weight: 500; display: flex; align-items: center; gap: 10px;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+        <span><?= htmlspecialchars($message) ?></span>
+    </div>
+<?php endif; ?>
 
+<!-- 模块 1：前台顶栏导航按钮管理表单 -->
+<form method="POST" action="/admin/navigation" id="nav-form" style="margin-bottom: 28px;">
+    <input type="hidden" name="save_type" value="nav">
     <input type="hidden" name="custom_nav" id="custom_nav_input">
-    <input type="hidden" name="friend_links" id="friend_links_input">
 
-    <!-- 模块 1：前台顶栏导航按钮管理 -->
-    <div class="card" style="margin-bottom: 28px;">
+    <div class="card" style="margin-bottom: 0;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 12px;">
             <div style="display: flex; align-items: center; gap: 12px;">
                 <div style="width: 36px; height: 36px; border-radius: 8px; background: #eff6ff; color: #0284c7; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
@@ -64,15 +58,19 @@ if (!empty($settings['friend_links'])) {
                     <p class="card-desc">配置展示在网站头部左侧的导航链接，支持内部分类、自定义单页与外部跳转</p>
                 </div>
             </div>
-            <div style="display: flex; gap: 8px;">
-                <button type="button" onclick="addNavRow()" class="btn btn-primary" style="padding: 6px 14px; font-size: 0.84rem;">
-                    + 新增导航按钮
-                </button>
-                <button type="button" onclick="loadCategoriesToNav()" class="btn btn-outline" style="padding: 6px 14px; font-size: 0.84rem;">
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                <button type="button" onclick="loadCategoriesToNav()" class="btn btn-outline" style="padding: 7px 12px; font-size: 0.84rem;">
                     ⚡ 导入全部分类
                 </button>
-                <button type="button" onclick="resetDefaultNav()" class="btn btn-outline" style="padding: 6px 12px; font-size: 0.84rem; color: #ef4444;" title="恢复系统默认导航">
+                <button type="button" onclick="resetDefaultNav()" class="btn btn-outline" style="padding: 7px 12px; font-size: 0.84rem; color: #ef4444;" title="恢复系统默认导航">
                     ↺ 恢复默认
+                </button>
+                <button type="button" onclick="addNavRow()" class="btn btn-outline" style="padding: 7px 14px; font-size: 0.84rem;">
+                    + 新增导航按钮
+                </button>
+                <button type="submit" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 6px; padding: 7px 18px; font-weight: 600; font-size: 0.86rem; box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2);">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                    <span>保存顶栏导航</span>
                 </button>
             </div>
         </div>
@@ -94,11 +92,16 @@ if (!empty($settings['friend_links'])) {
             </table>
         </div>
         <div style="font-size: 0.78rem; color: var(--admin-text-muted); margin-top: 10px; line-height: 1.5;">
-            💡 站内链接填写相对路径（如 <code>/</code>、<code>/?cate=1</code>、<code>/about</code>），外部链接请填写完整链接（如 <code>https://github.com</code>）。
+            💡 站内链接填写相对路径（如 <code>/</code>、<code>/?cate=1</code>、<code>/about</code>），外部链接请填写完整链接（如 <code>https://github.com</code>）。编辑完成后点击右上方「保存顶栏导航」独立生效。
         </div>
     </div>
+</form>
 
-    <!-- 模块 2：页脚全局友情链接管理 -->
+<!-- 模块 2：页脚全局友情链接管理表单 -->
+<form method="POST" action="/admin/navigation" id="links-form">
+    <input type="hidden" name="save_type" value="links">
+    <input type="hidden" name="friend_links" id="friend_links_input">
+
     <div class="card">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 12px;">
             <div style="display: flex; align-items: center; gap: 12px;">
@@ -110,9 +113,13 @@ if (!empty($settings['friend_links'])) {
                     <p class="card-desc">配置展示在网站每篇文章及详情底部的博友链接与技术站点引荐</p>
                 </div>
             </div>
-            <div>
-                <button type="button" onclick="addFriendLinkRow()" class="btn btn-primary" style="padding: 6px 14px; font-size: 0.84rem;">
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <button type="button" onclick="addFriendLinkRow()" class="btn btn-outline" style="padding: 7px 14px; font-size: 0.84rem;">
                     + 新增友情链接
+                </button>
+                <button type="submit" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 6px; padding: 7px 18px; font-weight: 600; font-size: 0.86rem; box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2);">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                    <span>保存友情链接</span>
                 </button>
             </div>
         </div>
@@ -135,7 +142,7 @@ if (!empty($settings['friend_links'])) {
             </table>
         </div>
         <div style="font-size: 0.78rem; color: var(--admin-text-muted); margin-top: 10px; line-height: 1.5;">
-            💡 友情链接将展示在文章正文底部的版权信息上方，支持鼠标悬浮展示站点描述，默认以新窗口打开。
+            💡 友情链接将展示在文章正文底部的版权信息上方，支持鼠标悬浮展示站点描述，默认以新窗口打开。编辑完成后点击右上方「保存友情链接」独立生效。
         </div>
     </div>
 </form>
@@ -297,9 +304,13 @@ function escapeHtml(str) {
     return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-// 表单提交前序列化 JSON
-document.getElementById('navigation-form').addEventListener('submit', function() {
+// 顶栏导航表单提交
+document.getElementById('nav-form').addEventListener('submit', function() {
     document.getElementById('custom_nav_input').value = JSON.stringify(navList);
+});
+
+// 友情链接表单提交
+document.getElementById('links-form').addEventListener('submit', function() {
     document.getElementById('friend_links_input').value = JSON.stringify(friendLinksList);
 });
 

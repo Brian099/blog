@@ -591,15 +591,22 @@ class AdminController {
 
         $message = null;
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $saveType = $_POST['save_type'] ?? '';
             $data = [];
-            if (isset($_POST['custom_nav'])) {
-                $data['custom_nav'] = trim($_POST['custom_nav']);
+            if ($saveType === 'nav') {
+                $data['custom_nav'] = trim($_POST['custom_nav'] ?? '[]');
+                Setting::updateMultiple($data);
+                $message = '🎉 顶栏导航按钮设置已保存成功！';
+            } elseif ($saveType === 'links') {
+                $data['friend_links'] = trim($_POST['friend_links'] ?? '[]');
+                Setting::updateMultiple($data);
+                $message = '🎉 页脚友情链接设置已保存成功！';
+            } else {
+                if (isset($_POST['custom_nav'])) $data['custom_nav'] = trim($_POST['custom_nav']);
+                if (isset($_POST['friend_links'])) $data['friend_links'] = trim($_POST['friend_links']);
+                Setting::updateMultiple($data);
+                $message = '设置已保存成功！';
             }
-            if (isset($_POST['friend_links'])) {
-                $data['friend_links'] = trim($_POST['friend_links']);
-            }
-            Setting::updateMultiple($data);
-            $message = '导航与友情链接设置已保存成功！';
         }
 
         $settings = Setting::getAll();
