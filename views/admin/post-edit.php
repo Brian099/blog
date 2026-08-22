@@ -164,6 +164,19 @@ async function handleEditorAttachmentUpload(e) {
 window.ueEditor = null;
 document.addEventListener('DOMContentLoaded', () => {
     if (window.UE) {
+        // 点击 UEditor 工具栏的附件图标时直接调起本地文件快速上传
+        UE.plugin.register('attachment-custom', function() {
+            return {
+                commands: {
+                    'attachment': {
+                        execCommand: function() {
+                            triggerEditorAttachmentUpload();
+                        }
+                    }
+                }
+            };
+        });
+
         window.ueEditor = UE.getEditor('post-content-editor', {
             serverUrl: '/admin/ueditor-api',
             initialFrameHeight: 520,
