@@ -46,17 +46,46 @@ a {
 /* Layout */
 .admin-layout {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
 }
 
-/* Sidebar */
+/* Sidebar - Fixed independently on the left */
 .admin-sidebar {
   width: 240px;
+  height: 100vh;
+  position: sticky;
+  top: 0;
   background-color: var(--admin-sidebar);
   color: #fff;
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  z-index: 100;
+}
+
+/* Custom Slim Scrollbars for Admin */
+.admin-sidebar::-webkit-scrollbar,
+.admin-main::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.admin-sidebar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+}
+.admin-sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+.admin-main::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+.admin-main::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 .admin-brand {
@@ -68,6 +97,7 @@ a {
   font-size: 1.1rem;
   font-weight: 700;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
 }
 
 .admin-nav {
@@ -108,14 +138,18 @@ a {
   justify-content: space-between;
   font-size: 0.85rem;
   color: var(--admin-sidebar-text);
+  flex-shrink: 0;
 }
 
-/* Main Area */
+/* Main Area - Independent Scroll */
 .admin-main {
   flex: 1;
+  height: 100vh;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   min-width: 0;
+  -webkit-overflow-scrolling: touch;
 }
 
 .admin-topbar {
@@ -126,6 +160,10 @@ a {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  flex-shrink: 0;
 }
 
 .admin-content {
