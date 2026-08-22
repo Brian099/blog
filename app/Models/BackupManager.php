@@ -151,21 +151,34 @@ class BackupManager {
      * 核心功能：将 MySQL 数据库一键完整转为 SQLite 数据库 (blog.db)
      */
     public static function convertMysqlToSqlite(array $mysqlConfig = []): array {
-        // 1. 建立 MySQL 连接
-        if (empty($mysqlConfig)) {
-            $config = require APP_PATH . '/Config.php';
-            $mysqlConfig = $config['mysql'] ?? [];
-        }
+        // 1. 自动从配置文件解析 MySQL 连接
+        $config = require APP_PATH . '/Config.php';
+        $cfgMysql = $config['mysql'] ?? [];
 
-        $host = $mysqlConfig['host'] ?? '127.0.0.1';
-        $port = (int)($mysqlConfig['port'] ?? 3306);
-        $dbname = $mysqlConfig['dbname'] ?? '';
-        $username = $mysqlConfig['username'] ?? 'root';
-        $password = $mysqlConfig['password'] ?? '';
-        $charset = 'utf8mb4';
+        // 如果未传入或不完整，自动读取系统配置与 c_option.php
+        $host = !empty($mysqlConfig['host']) ? $mysqlConfig['host'] : ($cfgMysql['host'] ?? '127.0.0.1');
+        $port = !empty($mysqlConfig['port']) ? (int)$mysqlConfig['port'] : (int)($cfgMysql['port'] ?? 3306);
+        $dbname = !empty($mysqlConfig['dbname']) ? $mysqlConfig['dbname'] : ($cfgMysql['dbname'] ?? '');
+        $username = !empty($mysqlConfig['username']) ? $mysqlConfig['username'] : ($cfgMysql['username'] ?? 'root');
+        $password = isset($mysqlConfig['password']) && $mysqlConfig['password'] !== '' ? $mysqlConfig['password'] : ($cfgMysql['password'] ?? '');
+        $charset = $cfgMysql['charset'] ?? 'utf8mb4';
 
         if (empty($dbname)) {
-            throw new Exception("MySQL 数据库名称不能为空");
+            // 尝试从 c_option.php 检测
+            if (!empty($config['c_option_source']) && file_exists($config['c_option_source'])) {
+                $cOpt = @include $config['c_option_source'];
+                if (is_array($cOpt) && !empty($cOpt['ZC_MYSQL_NAME'])) {
+                    $host = $cOpt['ZC_MYSQL_SERVER'] ?? $host;
+                    $port = (int)($cOpt['ZC_MYSQL_PORT'] ?? $port);
+                    $dbname = $cOpt['ZC_MYSQL_NAME'];
+                    $username = $cOpt['ZC_MYSQL_USERNAME'] ?? $username;
+                    $password = $cOpt['ZC_MYSQL_PASSWORD'] ?? $password;
+                }
+            }
+        }
+
+        if (empty($dbname)) {
+            throw new Exception("未在 c_option.php 或 Config.php 中检测到有效的 MySQL 数据库配置");
         }
 
         $dsn = "mysql:host={$host};port={$port};dbname={$dbname};charset={$charset}";

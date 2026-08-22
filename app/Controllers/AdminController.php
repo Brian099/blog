@@ -682,19 +682,22 @@ class AdminController {
     }
 
     /**
-     * MySQL 转 SQLite API
+     * MySQL 转 SQLite API（直接使用系统配置的数据库参数）
      */
     public function convertMysqlToSqlite(): void {
         $this->requireAuth();
         header('Content-Type: application/json; charset=utf-8');
         try {
-            $mysqlConfig = [
-                'host' => trim($_POST['host'] ?? '127.0.0.1'),
-                'port' => (int)($_POST['port'] ?? 3306),
-                'dbname' => trim($_POST['dbname'] ?? ''),
-                'username' => trim($_POST['username'] ?? 'root'),
-                'password' => $_POST['password'] ?? ''
-            ];
+            $mysqlConfig = [];
+            if (!empty($_POST['dbname'])) {
+                $mysqlConfig = [
+                    'host' => trim($_POST['host'] ?? '127.0.0.1'),
+                    'port' => (int)($_POST['port'] ?? 3306),
+                    'dbname' => trim($_POST['dbname'] ?? ''),
+                    'username' => trim($_POST['username'] ?? 'root'),
+                    'password' => $_POST['password'] ?? ''
+                ];
+            }
 
             $res = \App\Models\BackupManager::convertMysqlToSqlite($mysqlConfig);
             echo json_encode($res);

@@ -105,47 +105,70 @@ ob_start();
             <div>
                 <h3 class="settings-card-title" style="margin-bottom: 4px;">🔄 将 MySQL 数据库一键转为 SQLite (blog.db)</h3>
                 <p class="settings-card-desc">
-                    通过连接现有的 MySQL 数据库，将全部文章、分类、标签、附件、评论和配置<strong>无损提取并生成单文件极速 SQLite 数据库 (<code>data/blog.db</code>)</strong>，实现零依赖、零配置便携式运行。
+                    系统已通过后台身份验证，将<strong>直接自动从现有配置文件（<code>c_option.php</code> / <code>Config.php</code>）中读取 MySQL 连接信息</strong>，无需重复输入。点击下方按钮即可一键提取全部文章、分类、标签、附件与评论，并生成单文件免运维的 <strong><code>data/blog.db</code></strong>。
                 </p>
             </div>
         </div>
 
+        <!-- 自动识别到的配置预览卡片 -->
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px 20px; margin-bottom: 20px;">
+            <div style="font-size: 0.85rem; font-weight: 700; color: #334155; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                <span>已自动识别的源 MySQL 数据库配置：</span>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; font-size: 0.85rem;">
+                <div><span style="color: #64748b;">服务器地址:</span> <strong style="color: #0f172a;"><?= htmlspecialchars($mysqlConfig['host'] ?? '127.0.0.1') ?>:<?= (int)($mysqlConfig['port'] ?? 3306) ?></strong></div>
+                <div><span style="color: #64748b;">数据库名称:</span> <strong style="color: #0f172a;"><?= htmlspecialchars($mysqlConfig['dbname'] ?: '未设置(将自动探测)') ?></strong></div>
+                <div><span style="color: #64748b;">登录用户名:</span> <strong style="color: #0f172a;"><?= htmlspecialchars($mysqlConfig['username'] ?? 'root') ?></strong></div>
+                <div><span style="color: #64748b;">配置文件源:</span> <strong style="color: #0f172a;"><?= htmlspecialchars($config['c_option_source'] ? basename($config['c_option_source']) : 'app/Config.php') ?></strong></div>
+            </div>
+        </div>
+
         <form id="convert-form" onsubmit="handleConvert(event)">
-            <div class="form-grid">
-                <div class="form-group">
-                    <label class="form-label">MySQL 服务器地址 (Host)</label>
-                    <input type="text" id="m_host" name="host" class="form-control" value="<?= htmlspecialchars($mysqlConfig['host'] ?? '127.0.0.1') ?>" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">端口 (Port)</label>
-                    <input type="number" id="m_port" name="port" class="form-control" value="<?= (int)($mysqlConfig['port'] ?? 3306) ?>" required>
-                </div>
+            <!-- 高级自定义连接折叠区 (选填) -->
+            <div style="margin-bottom: 18px;">
+                <a href="javascript:void(0)" onclick="toggleAdvancedDb()" style="font-size: 0.85rem; color: #2563eb; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                    <span id="adv-arrow">▶</span> <span>高级选项：自定义指定其他 MySQL 目标连接 (通常无需修改)</span>
+                </a>
             </div>
 
-            <div class="form-grid" style="margin-top: 14px;">
-                <div class="form-group">
-                    <label class="form-label">MySQL 数据库名称 (Database Name)</label>
-                    <input type="text" id="m_dbname" name="dbname" class="form-control" value="<?= htmlspecialchars($mysqlConfig['dbname'] ?? '') ?>" placeholder="例如: zblog 或 giraff" required>
+            <div id="advanced-db-fields" style="display: none; background: #fff; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">MySQL 服务器地址 (Host)</label>
+                        <input type="text" id="m_host" name="host" class="form-control" value="<?= htmlspecialchars($mysqlConfig['host'] ?? '127.0.0.1') ?>">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">端口 (Port)</label>
+                        <input type="number" id="m_port" name="port" class="form-control" value="<?= (int)($mysqlConfig['port'] ?? 3306) ?>">
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">MySQL 用户名 (Username)</label>
-                    <input type="text" id="m_username" name="username" class="form-control" value="<?= htmlspecialchars($mysqlConfig['username'] ?? 'root') ?>" required>
-                </div>
-            </div>
 
-            <div class="form-group" style="margin-top: 14px;">
-                <label class="form-label">MySQL 密码 (Password)</label>
-                <input type="password" id="m_password" name="password" class="form-control" value="<?= htmlspecialchars($mysqlConfig['password'] ?? '') ?>" placeholder="输入 MySQL 数据库密码">
+                <div class="form-grid" style="margin-top: 14px;">
+                    <div class="form-group">
+                        <label class="form-label">MySQL 数据库名称 (Database Name)</label>
+                        <input type="text" id="m_dbname" name="dbname" class="form-control" value="<?= htmlspecialchars($mysqlConfig['dbname'] ?? '') ?>" placeholder="例如: zblog 或 giraff">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">MySQL 用户名 (Username)</label>
+                        <input type="text" id="m_username" name="username" class="form-control" value="<?= htmlspecialchars($mysqlConfig['username'] ?? 'root') ?>">
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-top: 14px;">
+                    <label class="form-label">MySQL 密码 (Password)</label>
+                    <input type="password" id="m_password" name="password" class="form-control" value="<?= htmlspecialchars($mysqlConfig['password'] ?? '') ?>" placeholder="留空则使用默认配置密码">
+                </div>
             </div>
 
             <div id="convert-result-box" style="display: none; margin-top: 16px; padding: 14px 18px; border-radius: 8px; font-size: 0.9rem;"></div>
 
-            <div style="margin-top: 24px; display: flex; gap: 12px; align-items: center;">
-                <button type="submit" id="btn-start-convert" class="btn btn-primary" style="background: #f59e0b; border-color: #d97706;">
-                    <span>⚡ 立即开始转换 (MySQL -> SQLite)</span>
+            <div style="margin-top: 20px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                <button type="submit" id="btn-start-convert" class="btn btn-primary" style="background: #f59e0b; border-color: #d97706; font-weight: 600; padding: 10px 20px;">
+                    <span>⚡ 立即从当前配置的 MySQL 转换并生成 SQLite (blog.db)</span>
                 </button>
                 <button type="button" onclick="testMysqlConnection()" id="btn-test-mysql" class="btn btn-outline">
-                    <span>🔌 测试 MySQL 连接</span>
+                    <span>🔌 测试当前 MySQL 连通性</span>
                 </button>
             </div>
         </form>
@@ -153,6 +176,19 @@ ob_start();
 </div>
 
 <script>
+// 折叠/展开高级数据库配置
+function toggleAdvancedDb() {
+    const el = document.getElementById('advanced-db-fields');
+    const arrow = document.getElementById('adv-arrow');
+    if (el.style.display === 'none') {
+        el.style.display = 'block';
+        arrow.innerText = '▼';
+    } else {
+        el.style.display = 'none';
+        arrow.innerText = '▶';
+    }
+}
+
 // 1. 创建备份
 async function createBackup() {
     const btn = document.getElementById('btn-create-bak');
@@ -226,11 +262,14 @@ async function testMysqlConnection() {
 
     const fd = new FormData();
     fd.append('type', 'mysql');
-    fd.append('host', document.getElementById('m_host').value);
-    fd.append('port', document.getElementById('m_port').value);
-    fd.append('dbname', document.getElementById('m_dbname').value);
-    fd.append('username', document.getElementById('m_username').value);
-    fd.append('password', document.getElementById('m_password').value);
+    const hostEl = document.getElementById('m_host');
+    if (hostEl && hostEl.value) {
+        fd.append('host', document.getElementById('m_host').value);
+        fd.append('port', document.getElementById('m_port').value);
+        fd.append('dbname', document.getElementById('m_dbname').value);
+        fd.append('username', document.getElementById('m_username').value);
+        fd.append('password', document.getElementById('m_password').value);
+    }
 
     try {
         const res = await fetch('/install/test-db', { method: 'POST', body: fd });
@@ -244,18 +283,18 @@ async function testMysqlConnection() {
         alert('请求异常: ' + e.message);
     } finally {
         btn.disabled = false;
-        btn.innerText = '🔌 测试 MySQL 连接';
+        btn.innerText = '🔌 测试当前 MySQL 连通性';
     }
 }
 
-// 5. 执行 MySQL 转 SQLite
+// 5. 执行 MySQL 转 SQLite（直接读取配置，无需重复输入）
 async function handleConvert(e) {
     e.preventDefault();
-    if (!confirm('确定要将该 MySQL 数据库完整提取并生成纯净 SQLite (data/blog.db) 吗？\n若已存在 blog.db，系统会自动备份旧文件。')) return;
+    if (!confirm('确定要从当前配置的 MySQL 数据库完整提取并生成纯净 SQLite (data/blog.db) 吗？\n\n系统将自动完成：\n1. 结构与数据提取\n2. 资源路径规范化\n3. VACUUM 碎片整理与优化\n（若已存在 blog.db，会自动进行安全备份）')) return;
 
     const btn = document.getElementById('btn-start-convert');
     btn.disabled = true;
-    btn.innerHTML = '<span>⏳ 正在迁移数据表并重构 SQLite (请稍候)...</span>';
+    btn.innerHTML = '<span>⏳ 正在从配置的 MySQL 迁移数据表并重构 SQLite (请稍候)...</span>';
 
     const form = document.getElementById('convert-form');
     const fd = new FormData(form);
@@ -288,12 +327,12 @@ async function handleConvert(e) {
             resBox.style.color = '#991b1b';
             resBox.innerHTML = `<strong>转换失败：</strong> ${json.error || '未知错误'}`;
             btn.disabled = false;
-            btn.innerHTML = '<span>⚡ 立即开始转换 (MySQL -> SQLite)</span>';
+            btn.innerHTML = '<span>⚡ 立即从当前配置的 MySQL 转换并生成 SQLite (blog.db)</span>';
         }
     } catch (e) {
         alert('请求异常: ' + e.message);
         btn.disabled = false;
-        btn.innerHTML = '<span>⚡ 立即开始转换 (MySQL -> SQLite)</span>';
+        btn.innerHTML = '<span>⚡ 立即从当前配置的 MySQL 转换并生成 SQLite (blog.db)</span>';
     }
 }
 </script>
