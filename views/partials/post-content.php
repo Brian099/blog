@@ -92,27 +92,29 @@ $siteSettings = $siteSettings ?? \App\Models\Setting::getAll();
         <?php endif; ?>
 
         <?php if (!empty($post['prev']) || !empty($post['next'])): ?>
-            <nav class="article-footer-nav">
+            <nav class="article-footer-nav" aria-label="文章导航">
                 <?php if (!empty($post['prev'])): 
                     $prevId = $post['prev']['log_ID'] ?? $post['prev']['log_id'] ?? $post['prev']['id'] ?? '';
                     $prevTitle = $post['prev']['log_Title'] ?? $post['prev']['log_title'] ?? $post['prev']['title'] ?? '上一篇';
                 ?>
-                    <a href="/?id=<?= $prevId ?>" class="nav-card post-nav-link" data-id="<?= $prevId ?>">
+                    <a href="/?id=<?= $prevId ?>" class="nav-card post-nav-link prev-card" data-id="<?= $prevId ?>" title="<?= htmlspecialchars($prevTitle) ?>">
                         <span class="nav-label">← 上一篇</span>
                         <span class="nav-title"><?= htmlspecialchars($prevTitle) ?></span>
                     </a>
                 <?php else: ?>
-                    <div></div>
+                    <div class="nav-card-placeholder"></div>
                 <?php endif; ?>
 
                 <?php if (!empty($post['next'])): 
                     $nextId = $post['next']['log_ID'] ?? $post['next']['log_id'] ?? $post['next']['id'] ?? '';
                     $nextTitle = $post['next']['log_Title'] ?? $post['next']['log_title'] ?? $post['next']['title'] ?? '下一篇';
                 ?>
-                    <a href="/?id=<?= $nextId ?>" class="nav-card post-nav-link" data-id="<?= $nextId ?>" style="text-align: right;">
+                    <a href="/?id=<?= $nextId ?>" class="nav-card post-nav-link next-card" data-id="<?= $nextId ?>" title="<?= htmlspecialchars($nextTitle) ?>">
                         <span class="nav-label">下一篇 →</span>
                         <span class="nav-title"><?= htmlspecialchars($nextTitle) ?></span>
                     </a>
+                <?php else: ?>
+                    <div class="nav-card-placeholder"></div>
                 <?php endif; ?>
             </nav>
         <?php endif; ?>
