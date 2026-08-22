@@ -110,6 +110,9 @@ $siteSettings = $siteSettings ?? \App\Models\Setting::getAll();
                 <?php endif; ?>
             </nav>
         <?php endif; ?>
+        
+        <!-- Bottom Breathing Room Spacer -->
+        <div class="article-bottom-spacer"></div>
     </article>
 <?php else: ?>
     <div style="text-align: center; padding: 100px 20px; color: var(--text-light);">
