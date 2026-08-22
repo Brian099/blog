@@ -9,15 +9,12 @@ if (!defined('VIEW_PATH')) define('VIEW_PATH', ROOT_PATH . '/views');
 if (!defined('PUBLIC_PATH')) define('PUBLIC_PATH', ROOT_PATH . '/public');
 if (!defined('DATA_PATH')) define('DATA_PATH', ROOT_PATH . '/data');
 
-// 自动适配上传目录（优先使用 Z-Blog 原生 zb_users/upload/，否则使用 public/uploads/）
+// 统一使用 Z-Blog 原生 zb_users/upload/ 作为上传物理存储目录
 if (!defined('UPLOAD_PATH')) {
-    if (is_dir(ROOT_PATH . '/zb_users/upload')) {
-        define('UPLOAD_PATH', ROOT_PATH . '/zb_users/upload');
-    } elseif (is_dir(PUBLIC_PATH . '/uploads')) {
-        define('UPLOAD_PATH', PUBLIC_PATH . '/uploads');
-    } else {
-        define('UPLOAD_PATH', ROOT_PATH . '/uploads');
-    }
+    define('UPLOAD_PATH', ROOT_PATH . '/zb_users/upload');
+}
+if (!is_dir(UPLOAD_PATH)) {
+    @mkdir(UPLOAD_PATH, 0777, true);
 }
 
 // 自动检测并适配 Z-Blog 现有的 c_option.php 配置文件
@@ -107,7 +104,7 @@ return [
 
     // 站点基础路径配置
     'site_url' => '', // 自动识别
-    'upload_url' => is_dir(ROOT_PATH . '/zb_users/upload') ? '/zb_users/upload' : '/uploads',
+    'upload_url' => '/zb_users/upload',
     
     // 后台管理 Session 标识
     'admin_session_key' => 'zblog_admin_user',

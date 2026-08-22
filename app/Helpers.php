@@ -6,9 +6,10 @@ class Helpers {
      * 替换 Z-Blog 内部宏与路径
      */
     public static function processContent(string $content): string {
-        // 替换 {#ZC_BLOG_HOST#}zb_users/upload/ 为 /uploads/
-        $content = str_replace('{#ZC_BLOG_HOST#}zb_users/upload/', '/uploads/', $content);
+        // 统一宏替换与路径规整为 Z-Blog 原生 /zb_users/upload/
+        $content = str_replace(['{#ZC_BLOG_HOST#}zb_users/upload/', '{#ZC_BLOG_HOST#}upload/'], '/zb_users/upload/', $content);
         $content = str_replace('{#ZC_BLOG_HOST#}', '/', $content);
+        $content = str_replace('/uploads/', '/zb_users/upload/', $content);
         
         // 修复部分转义字符
         $content = htmlspecialchars_decode($content, ENT_QUOTES);

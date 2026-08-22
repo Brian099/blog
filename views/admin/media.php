@@ -151,7 +151,7 @@ ob_start();
                         <td>
                             <?php if ($tab === 'disk'): ?>
                                 <div style="font-weight: 600; color: #0f172a;"><?= htmlspecialchars($item['filename']) ?></div>
-                                <div style="font-size: 0.75rem; color: #64748b; font-family: monospace;">uploads<?= htmlspecialchars($item['rel_path']) ?></div>
+                                <div style="font-size: 0.75rem; color: #64748b; font-family: monospace;">zb_users/upload<?= htmlspecialchars($item['rel_path']) ?></div>
                                 <?php if (!$item['in_db']): ?>
                                     <span style="font-size: 0.7rem; background: #fef3c7; color: #b45309; padding: 1px 4px; border-radius: 3px; font-weight: 600;">未在数据库中登记</span>
                                 <?php endif; ?>

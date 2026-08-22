@@ -459,7 +459,7 @@ class AdminController {
                 'id' => (int)\App\Database::lastInsertId(),
                 'name' => $newName,
                 'size' => $size,
-                'url' => "/uploads/{$year}/{$month}/" . $newName
+                'url' => "/zb_users/upload/{$year}/{$month}/" . $newName
             ];
         }
 
@@ -510,7 +510,7 @@ class AdminController {
                 'id' => (int)\App\Database::lastInsertId(),
                 'name' => $newName,
                 'size' => $size,
-                'url' => "/uploads/{$year}/{$month}/" . $newName
+                'url' => "/zb_users/upload/{$year}/{$month}/" . $newName
             ];
         }
 

@@ -100,7 +100,7 @@ class Upload {
                 $year = $m[1];
                 $month = $m[2];
             }
-            $relPath = "/uploads/{$year}/{$month}/" . $item['ul_Name'];
+            $relPath = "/zb_users/upload/{$year}/{$month}/" . $item['ul_Name'];
 
             $processed[] = [
                 'id' => (int)$item['ul_ID'],
@@ -302,7 +302,7 @@ class Upload {
         foreach ($pageItemsRaw as $raw) {
             $fullPath = $raw['full_path'];
             $relPath = str_replace('\\', '/', substr($fullPath, strlen($baseUploadDir)));
-            $webUrl = '/uploads' . (strpos($relPath, '/') === 0 ? $relPath : '/' . $relPath);
+            $webUrl = '/zb_users/upload' . (strpos($relPath, '/') === 0 ? $relPath : '/' . $relPath);
             $ext = strtolower(pathinfo($raw['filename'], PATHINFO_EXTENSION));
             $isImage = in_array($ext, ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg']);
             $mime = $isImage ? "image/{$ext}" : "application/{$ext}";
@@ -494,7 +494,7 @@ class Upload {
             );
 
             $id = (int)Database::lastInsertId();
-            $url = "/uploads/{$year}/{$month}/" . $newName;
+            $url = "/zb_users/upload/{$year}/{$month}/" . $newName;
 
             return [
                 'id' => $id,
