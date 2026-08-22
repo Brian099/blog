@@ -137,6 +137,42 @@ ob_start();
     </div>
 </div>
 
+<!-- 批量轮询处理进度弹窗 -->
+<div id="progress-modal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center;">
+    <div style="background: var(--admin-card-bg, #ffffff); border-radius: 16px; padding: 32px 28px; width: 90%; max-width: 480px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1); border: 1px solid var(--admin-border, #e2e8f0); text-align: center;">
+        <div id="progress-icon" style="width: 56px; height: 56px; border-radius: 50%; background: #e0f2fe; color: #0284c7; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="spin-icon"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+        </div>
+
+        <h3 id="progress-title" style="font-size: 1.25rem; font-weight: 700; margin-bottom: 8px; color: var(--admin-text, #1e293b);">正在分批清洗全站文章...</h3>
+        <p id="progress-desc" style="font-size: 0.88rem; color: var(--admin-text-muted, #64748b); margin-bottom: 20px; line-height: 1.5;">采用安全分批轮询机制，正在处理文章排版并剥离定宽与换行限制...</p>
+
+        <!-- 进度条 -->
+        <div style="background: #f1f5f9; border-radius: 999px; height: 12px; overflow: hidden; margin-bottom: 12px; position: relative;">
+            <div id="progress-bar-fill" style="width: 0%; height: 100%; background: linear-gradient(90deg, #0284c7, #2563eb); border-radius: 999px; transition: width 0.2s ease;"></div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; font-size: 0.82rem; color: var(--admin-text-muted, #64748b); font-weight: 600; margin-bottom: 18px;">
+            <span id="progress-status-text">准备开始...</span>
+            <span id="progress-percent">0%</span>
+        </div>
+
+        <div style="background: #f8fafc; border-radius: 8px; padding: 12px 16px; font-size: 0.85rem; color: var(--admin-text, #334155); display: flex; justify-content: space-around; border: 1px solid #e2e8f0; margin-bottom: 20px;">
+            <div>已优化文章：<strong id="progress-updated-count" style="color: #2563eb;">0</strong> 篇</div>
+            <div>释放冗余限制：<strong id="progress-saved-kb" style="color: #16a34a;">0.00</strong> KB</div>
+        </div>
+
+        <button id="progress-close-btn" onclick="closeProgressModal()" class="btn btn-primary" style="display: none; width: 100%; padding: 10px; font-weight: 600;">
+            完成并查看结果
+        </button>
+    </div>
+</div>
+
+<style>
+@keyframes spin { 100% { transform: rotate(360deg); } }
+.spin-icon { animation: spin 1s linear infinite; }
+</style>
+
 <script>
 async function triggerScan() {
     const btn = document.getElementById('rescan-btn');
@@ -164,39 +200,100 @@ async function triggerScan() {
     }
 }
 
+// 分批轮询清洗（每批 30 篇，毫秒级响应，永不超时）
 async function triggerBatchClean() {
-    if (!confirm('确定要执行全站文章自适应排版批量清洗吗？\n\n此操作将移除所有文章中图片的定宽/高属性、表格的定宽与 nowrap 限制，并自动安全保存。')) {
+    if (!confirm('确定要执行全站文章自适应排版批量清洗吗？\n\n系统将自动采用分批轮询处理（每批 30 篇），实时展示进度，安全剥离所有定宽与换行限制。')) {
         return;
     }
 
-    const btn = document.getElementById('batch-clean-btn');
-    btn.disabled = true;
-    btn.innerHTML = '<span>正在批量修复中...</span>';
+    const modal = document.getElementById('progress-modal');
+    const bar = document.getElementById('progress-bar-fill');
+    const percentEl = document.getElementById('progress-percent');
+    const statusEl = document.getElementById('progress-status-text');
+    const updatedCountEl = document.getElementById('progress-updated-count');
+    const savedKbEl = document.getElementById('progress-saved-kb');
+    const closeBtn = document.getElementById('progress-close-btn');
+    const titleEl = document.getElementById('progress-title');
+    const descEl = document.getElementById('progress-desc');
+    const iconEl = document.getElementById('progress-icon');
+
+    // 重置弹窗状态
+    bar.style.width = '0%';
+    percentEl.innerText = '0%';
+    statusEl.innerText = '正在启动分批优化...';
+    updatedCountEl.innerText = '0';
+    savedKbEl.innerText = '0.00';
+    closeBtn.style.display = 'none';
+    titleEl.innerText = '正在分批清洗全站文章...';
+    descEl.innerText = '采用安全分批轮询机制，正在处理文章排版并剥离定宽与换行限制...';
+    iconEl.innerHTML = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="spin-icon"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>';
+    iconEl.style.background = '#e0f2fe';
+    iconEl.style.color = '#0284c7';
+    modal.style.display = 'flex';
+
+    let offset = 0;
+    const limit = 30;
+    let totalUpdated = 0;
+    let totalBytesSaved = 0;
+    let totalArticles = 0;
 
     try {
-        const res = await fetch('/admin/content-cleaner/action', {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: 'action=clean'
-        });
-        const data = await res.json();
-        if (data.success) {
-            const d = data.data;
-            alert(`🎉 全站排版自适应修复成功！\n\n- 共扫描文章：${d.total_scanned} 篇\n- 修复并优化文章：${d.updated_count} 篇\n- 清除定宽与冗余限制：${(d.bytes_saved / 1024).toFixed(2)} KB\n\n全站文章现在已具备 100% 完美的移动端/窄屏自适应能力！`);
-            triggerScan();
-        } else {
-            alert('修复失败: ' + (data.error || '未知错误'));
+        while (true) {
+            const res = await fetch('/admin/content-cleaner/action', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: `action=clean_chunk&offset=${offset}&limit=${limit}`
+            });
+
+            const data = await res.json();
+            if (!data.success) {
+                throw new Error(data.error || '分批处理异常');
+            }
+
+            const chunk = data.data;
+            totalArticles = chunk.total || totalArticles;
+            totalUpdated += (chunk.updated_count || 0);
+            totalBytesSaved += (chunk.bytes_saved || 0);
+
+            const processed = chunk.next_offset;
+            const pct = totalArticles > 0 ? Math.min(100, Math.round((processed / totalArticles) * 100)) : 100;
+
+            bar.style.width = pct + '%';
+            percentEl.innerText = pct + '%';
+            statusEl.innerText = `已处理 ${Math.min(processed, totalArticles)} / ${totalArticles} 篇`;
+            updatedCountEl.innerText = totalUpdated;
+            savedKbEl.innerText = (totalBytesSaved / 1024).toFixed(2);
+
+            if (chunk.done || chunk.processed_count === 0) {
+                break;
+            }
+
+            offset = chunk.next_offset;
         }
+
+        // 完成状态
+        bar.style.width = '100%';
+        percentEl.innerText = '100%';
+        titleEl.innerText = '🎉 全站排版优化清洗完成！';
+        descEl.innerText = `共处理 ${totalArticles} 篇文章，成功修复并优化 ${totalUpdated} 篇，剥离冗余限制 ${(totalBytesSaved / 1024).toFixed(2)} KB。`;
+        iconEl.innerHTML = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>';
+        iconEl.style.background = '#dcfce7';
+        iconEl.style.color = '#16a34a';
+        closeBtn.style.display = 'block';
+
     } catch (e) {
-        alert('请求异常: ' + e.message);
-    } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg><span>一键批量修复全站文章</span>';
+        alert('分批处理异常: ' + e.message);
+        modal.style.display = 'none';
     }
+}
+
+function closeProgressModal() {
+    document.getElementById('progress-modal').style.display = 'none';
+    triggerScan();
 }
 
 function updateUIWithScanResult(scan) {

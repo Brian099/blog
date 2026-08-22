@@ -596,7 +596,12 @@ class AdminController {
         $action = $_POST['action'] ?? $_GET['action'] ?? 'scan';
 
         try {
-            if ($action === 'clean') {
+            if ($action === 'clean_chunk') {
+                $offset = (int)($_POST['offset'] ?? $_GET['offset'] ?? 0);
+                $limit = (int)($_POST['limit'] ?? $_GET['limit'] ?? 30);
+                $res = Post::cleanResponsiveChunk($offset, $limit);
+                echo json_encode(['success' => true, 'data' => $res]);
+            } elseif ($action === 'clean') {
                 $res = Post::batchCleanResponsive();
                 echo json_encode(['success' => true, 'data' => $res]);
             } else {
@@ -606,6 +611,7 @@ class AdminController {
         } catch (\Throwable $e) {
             echo json_encode(['success' => false, 'error' => $e->getMessage()]);
         }
+        exit;
     }
 
     /**

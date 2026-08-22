@@ -513,4 +513,53 @@ class Post {
             'fixed_list' => $fixedList
         ];
     }
+
+    /**
+     * 分批轮询清洗自适应排版（每批处理 $limit 篇，带实时进度，杜绝超时）
+     */
+    public static function cleanResponsiveChunk(int $offset = 0, int $limit = 30): array {
+        $totalRow = Database::fetchOne("SELECT COUNT(*) as cnt FROM zbp_post WHERE log_Type = 0");
+        $total = (int)($totalRow['cnt'] ?? 0);
+
+        $limit = max(1, min(100, $limit));
+        $offset = max(0, $offset);
+
+        $rows = Database::query("SELECT log_ID, log_Title, log_Content, log_Intro FROM zbp_post WHERE log_Type = 0 ORDER BY log_ID ASC LIMIT " . (int)$limit . " OFFSET " . (int)$offset);
+
+        $updatedCount = 0;
+        $bytesSaved = 0;
+
+        foreach ($rows as $row) {
+            $id = (int)$row['log_ID'];
+            $content = $row['log_Content'] ?? '';
+            $intro = $row['log_Intro'] ?? '';
+
+            $cleanedContent = self::cleanResponsiveHtml($content);
+            $cleanedIntro = self::cleanResponsiveHtml($intro);
+
+            if ($cleanedContent !== $content || $cleanedIntro !== $intro) {
+                $diff = (strlen($content) - strlen($cleanedContent)) + (strlen($intro) - strlen($cleanedIntro));
+                $bytesSaved += $diff;
+                $updatedCount++;
+
+                Database::execute(
+                    "UPDATE zbp_post SET log_Content = ?, log_Intro = ? WHERE log_ID = ?",
+                    [$cleanedContent, $cleanedIntro, $id]
+                );
+            }
+        }
+
+        $nextOffset = $offset + count($rows);
+        $done = ($nextOffset >= $total || empty($rows));
+
+        return [
+            'total' => $total,
+            'processed_count' => count($rows),
+            'current_offset' => $offset,
+            'next_offset' => $nextOffset,
+            'updated_count' => $updatedCount,
+            'bytes_saved' => $bytesSaved,
+            'done' => $done
+        ];
+    }
 }
