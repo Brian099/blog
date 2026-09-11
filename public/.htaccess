@@ -1,0 +1,12 @@
+<IfModule mod_rewrite.c>
+    Options -Indexes +FollowSymLinks
+    RewriteEngine On
+    RewriteBase /
+
+    # 如果请求的是实际存在的静态物理资源（CSS/JS/图片等），直接访问
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+
+    # 其余所有动态请求转发至 public/index.php
+    RewriteRule ^ index.php [L,QSA]
+</IfModule>

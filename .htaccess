@@ -1,0 +1,23 @@
+<IfModule mod_rewrite.c>
+    Options -Indexes +FollowSymLinks
+    RewriteEngine On
+    RewriteBase /
+
+    # 保护敏感文件防止被外部直接读取
+    <FilesMatch "\.(db|sql|ini|lock|log|md)$">
+        <IfModule mod_authz_core.c>
+            Require all denied
+        </IfModule>
+        <IfModule !mod_authz_core.c>
+            Order deny,allow
+            Deny from all
+        </IfModule>
+    </FilesMatch>
+
+    # 如果请求的是实际存在的物理文件或目录，直接提供服务
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+
+    # 其余所有动态路由统一转发至根目录 index.php 处理
+    RewriteRule ^ index.php [L,QSA]
+</IfModule>

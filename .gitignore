@@ -13,3 +13,4 @@ uploads/
 old_zblog/
 data/backups/*
 !data/backups/.gitkeep
+data/install.lock
