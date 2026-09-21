@@ -1,5 +1,6 @@
 <?php
-$pageTitle = $post ? '编辑文章 - ' . htmlspecialchars($post['title']) : '新建文章';
+$isEditing = !empty($post['id']);
+$pageTitle = $isEditing ? '编辑文章 - ' . htmlspecialchars($post['title'] ?? '') : '新建文章';
 ob_start();
 ?>
 
@@ -13,13 +14,13 @@ ob_start();
 <script src="/assets/ueditor/lang/zh-cn/zh-cn.js"></script>
 
 <div class="page-title-row">
-    <h2 class="page-title"><?= $post ? '编辑文章' : '新建文章' ?></h2>
+    <h2 class="page-title"><?= $isEditing ? '编辑文章' : '新建文章' ?></h2>
     <a href="/admin/posts" class="btn btn-outline">← 返回列表</a>
 </div>
 
 <form id="post-edit-form">
-    <?php if ($post): ?>
-        <input type="hidden" name="id" value="<?= $post['id'] ?>">
+    <?php if ($isEditing): ?>
+        <input type="hidden" name="id" value="<?= (int)$post['id'] ?>">
     <?php endif; ?>
 
     <div style="display: grid; grid-template-columns: 3fr 1fr; gap: 24px;">

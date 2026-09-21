@@ -334,160 +334,172 @@ class AdminController {
         $this->requireAuth();
         header('Content-Type: application/json; charset=utf-8');
 
-        $action = $_GET['action'] ?? '';
+        try {
+            $action = $_GET['action'] ?? '';
 
-        if ($action === 'config') {
-            // UEditor 标准前端配置响应
-            echo json_encode([
-                "imageActionName" => "uploadimage",
-                "imageFieldName" => "upfile",
-                "imageMaxSize" => 20480000,
-                "imageAllowFiles" => [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp"],
-                "imageCompressEnable" => true,
-                "imageCompressBorder" => 1600,
-                "imageInsertAlign" => "none",
-                "imageUrlPrefix" => "",
-                "scrawlActionName" => "uploadscrawl",
-                "scrawlFieldName" => "upfile",
-                "snapscreenActionName" => "uploadimage",
-                "catcherActionName" => "catchimage",
-                "catcherFieldName" => "source",
-                "catcherMaxSize" => 20480000,
-                "catcherAllowFiles" => [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp"],
-                "fileActionName" => "uploadfile",
-                "fileFieldName" => "upfile",
-                "fileMaxSize" => 204800000,
-                "fileAllowFiles" => [
-                    ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp", ".svg",
-                    ".zip", ".rar", ".7z", ".tar", ".gz", ".bz2", ".zba",
-                    ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".pdf", ".txt", ".md",
-                    ".exe", ".bat", ".cmd", ".apk", ".msu", ".iso", ".dmg", ".pat",
-                    ".py", ".sh", ".sql", ".php", ".js", ".html", ".css", ".json"
-                ]
-            ]);
-            return;
-        }
-
-        // 1. 标准文件上传 (拖拽/文件选择)
-        if (in_array($action, ['uploadimage', 'uploadfile', 'uploadvideo'])) {
-            $fileField = 'upfile';
-            if (!empty($_FILES[$fileField])) {
-                $res = Upload::handleUpload($_FILES[$fileField]);
-                if ($res) {
-                    echo json_encode([
-                        "state" => "SUCCESS",
-                        "url" => $res['url'],
-                        "title" => $res['name'],
-                        "original" => $res['source_name'],
-                        "type" => "." . pathinfo($res['name'], PATHINFO_EXTENSION),
-                        "size" => $res['size']
-                    ]);
-                    return;
-                }
+            if ($action === 'config') {
+                // UEditor 标准前端配置响应
+                echo json_encode([
+                    "imageActionName" => "uploadimage",
+                    "imageFieldName" => "upfile",
+                    "imageMaxSize" => 20480000,
+                    "imageAllowFiles" => [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp"],
+                    "imageCompressEnable" => true,
+                    "imageCompressBorder" => 1600,
+                    "imageInsertAlign" => "none",
+                    "imageUrlPrefix" => "",
+                    "scrawlActionName" => "uploadscrawl",
+                    "scrawlFieldName" => "upfile",
+                    "snapscreenActionName" => "uploadimage",
+                    "catcherActionName" => "catchimage",
+                    "catcherFieldName" => "source",
+                    "catcherMaxSize" => 20480000,
+                    "catcherAllowFiles" => [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp"],
+                    "fileActionName" => "uploadfile",
+                    "fileFieldName" => "upfile",
+                    "fileMaxSize" => 204800000,
+                    "fileAllowFiles" => [
+                        ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp", ".svg",
+                        ".zip", ".rar", ".7z", ".tar", ".gz", ".bz2", ".zba",
+                        ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".pdf", ".txt", ".md",
+                        ".exe", ".bat", ".cmd", ".apk", ".msu", ".iso", ".dmg", ".pat",
+                        ".py", ".sh", ".sql", ".php", ".js", ".html", ".css", ".json"
+                    ]
+                ]);
+                return;
             }
-            
-            // 兼容 Base64 格式的截图粘贴
-            if (!empty($_POST[$fileField])) {
-                $base64Data = $_POST[$fileField];
+
+            // 1. 标准文件上传 (拖拽/文件选择/截图粘贴)
+            if (in_array($action, ['uploadimage', 'uploadfile', 'uploadvideo'])) {
+                $fileField = 'upfile';
+                if (!empty($_FILES[$fileField])) {
+                    $res = Upload::handleUpload($_FILES[$fileField]);
+                    if ($res) {
+                        echo json_encode([
+                            "state" => "SUCCESS",
+                            "url" => $res['url'],
+                            "title" => $res['name'],
+                            "original" => $res['source_name'],
+                            "type" => "." . pathinfo($res['name'], PATHINFO_EXTENSION),
+                            "size" => $res['size']
+                        ]);
+                        return;
+                    }
+                }
+                
+                // 兼容 Base64 格式的截图粘贴
+                if (!empty($_POST[$fileField])) {
+                    $base64Data = $_POST[$fileField];
+                    $res = $this->saveBase64Image($base64Data);
+                    if ($res) {
+                        echo json_encode([
+                            "state" => "SUCCESS",
+                            "url" => $res['url'],
+                            "title" => $res['name'],
+                            "original" => "paste.png",
+                            "type" => "." . pathinfo($res['name'], PATHINFO_EXTENSION),
+                            "size" => $res['size']
+                        ]);
+                        return;
+                    }
+                }
+
+                echo json_encode(["state" => "上传失败：未能接收到上传数据或目录不可写"]);
+                return;
+            }
+
+            // 2. 涂鸦/截图 Base64 上传
+            if ($action === 'uploadscrawl') {
+                $base64Data = $_POST['upfile'] ?? '';
                 $res = $this->saveBase64Image($base64Data);
                 if ($res) {
                     echo json_encode([
                         "state" => "SUCCESS",
                         "url" => $res['url'],
                         "title" => $res['name'],
-                        "original" => "paste.png",
-                        "type" => ".png",
+                        "original" => "scrawl.png",
+                        "type" => "." . pathinfo($res['name'], PATHINFO_EXTENSION),
                         "size" => $res['size']
                     ]);
                     return;
                 }
+                echo json_encode(["state" => "涂鸦保存失败"]);
+                return;
             }
 
-            echo json_encode(["state" => "上传失败"]);
-            return;
-        }
-
-        // 2. 涂鸦/截图 Base64 上传
-        if ($action === 'uploadscrawl') {
-            $base64Data = $_POST['upfile'] ?? '';
-            $res = $this->saveBase64Image($base64Data);
-            if ($res) {
+            // 3. 远程外链图片自动抓取到本地
+            if ($action === 'catchimage') {
+                $sources = $_POST['source'] ?? [];
+                $list = [];
+                foreach ($sources as $imgUrl) {
+                    $saved = $this->downloadRemoteImage($imgUrl);
+                    if ($saved) {
+                        $list[] = [
+                            "state" => "SUCCESS",
+                            "url" => $saved['url'],
+                            "size" => $saved['size'],
+                            "title" => $saved['name'],
+                            "original" => $imgUrl,
+                            "source" => $imgUrl
+                        ];
+                    }
+                }
                 echo json_encode([
-                    "state" => "SUCCESS",
-                    "url" => $res['url'],
-                    "title" => $res['name'],
-                    "original" => "scrawl.png",
-                    "type" => ".png",
-                    "size" => $res['size']
+                    "state" => !empty($list) ? "SUCCESS" : "FAIL",
+                    "list" => $list
                 ]);
                 return;
             }
-            echo json_encode(["state" => "涂鸦保存失败"]);
-            return;
-        }
 
-        // 3. 远程外链图片自动抓取到本地
-        if ($action === 'catchimage') {
-            $sources = $_POST['source'] ?? [];
-            $list = [];
-            foreach ($sources as $imgUrl) {
-                $saved = $this->downloadRemoteImage($imgUrl);
-                if ($saved) {
-                    $list[] = [
-                        "state" => "SUCCESS",
-                        "url" => $saved['url'],
-                        "size" => $saved['size'],
-                        "title" => $saved['name'],
-                        "original" => $imgUrl,
-                        "source" => $imgUrl
-                    ];
-                }
-            }
-            echo json_encode([
-                "state" => !empty($list) ? "SUCCESS" : "FAIL",
-                "list" => $list
-            ]);
-            return;
+            echo json_encode(["state" => "未知操作"]);
+        } catch (\Throwable $e) {
+            echo json_encode(["state" => "上传处理异常: " . $e->getMessage()]);
         }
-
-        echo json_encode(["state" => "未知操作"]);
     }
 
     /**
      * 保存 Base64 粘贴图片到 uploads 目录
      */
     private function saveBase64Image(string $base64Data): ?array {
-        if (preg_match('/^(data:\s*image\/(\w+);base64,)/', $base64Data, $result)) {
-            $type = $result[2];
-            $base64Data = base64_decode(str_replace($result[1], '', $base64Data));
+        $type = 'png';
+        if (preg_match('/^data:\s*image\/(\w+);base64,/i', $base64Data, $result)) {
+            $type = strtolower($result[1]);
+            $base64Data = base64_decode(substr($base64Data, strlen($result[0])));
         } else {
             $base64Data = base64_decode($base64Data);
         }
 
         if (empty($base64Data)) return null;
 
+        if ($type === 'jpeg') $type = 'jpg';
+        if (!in_array($type, ['png', 'jpg', 'gif', 'webp', 'bmp'])) {
+            $type = 'png';
+        }
+
         $year = date('Y');
         $month = date('m');
         $targetDir = UPLOAD_PATH . "/{$year}/{$month}";
         if (!is_dir($targetDir)) {
-            mkdir($targetDir, 0777, true);
+            @mkdir($targetDir, 0777, true);
         }
 
         $newName = date('YmdHis') . rand(1000, 9999) . '.' . $type;
         $targetPath = $targetDir . '/' . $newName;
 
-        if (file_put_contents($targetPath, $base64Data)) {
+        if (@file_put_contents($targetPath, $base64Data)) {
             $size = strlen($base64Data);
+            $mime = Upload::getMimeType($targetPath, $type);
             $time = time();
             \App\Database::execute(
-                "INSERT INTO zbp_upload (ul_AuthorID, ul_Size, ul_Name, ul_SourceName, ul_MimeType, ul_PostTime, ul_DownNums, ul_LogID, ul_Intro, ul_Meta) VALUES (1, ?, ?, ?, 'image/{$type}', ?, 0, 0, '', '')",
-                [$size, $newName, 'paste_' . $newName, $time]
+                "INSERT INTO zbp_upload (ul_AuthorID, ul_Size, ul_Name, ul_SourceName, ul_MimeType, ul_PostTime, ul_DownNums, ul_LogID, ul_Intro, ul_Meta) VALUES (1, ?, ?, ?, ?, ?, 0, 0, '', '')",
+                [$size, $newName, 'paste_' . $newName, $mime, $time]
             );
 
             return [
                 'id' => (int)\App\Database::lastInsertId(),
                 'name' => $newName,
                 'size' => $size,
+                'mime' => $mime,
                 'url' => "/users/upload/{$year}/{$month}/" . $newName
             ];
         }
@@ -505,9 +517,11 @@ class AdminController {
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
         curl_setopt($ch, CURLOPT_TIMEOUT, 10);
         curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0');
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
         $data = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+        $contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE) ?: 'image/jpeg';
         curl_close($ch);
 
         if ($httpCode !== 200 || empty($data)) return null;
@@ -521,24 +535,26 @@ class AdminController {
         $month = date('m');
         $targetDir = UPLOAD_PATH . "/{$year}/{$month}";
         if (!is_dir($targetDir)) {
-            mkdir($targetDir, 0777, true);
+            @mkdir($targetDir, 0777, true);
         }
 
         $newName = date('YmdHis') . rand(1000, 9999) . '.' . $ext;
         $targetPath = $targetDir . '/' . $newName;
 
-        if (file_put_contents($targetPath, $data)) {
+        if (@file_put_contents($targetPath, $data)) {
             $size = strlen($data);
+            $mime = Upload::getMimeType($targetPath, $ext);
             $time = time();
             \App\Database::execute(
-                "INSERT INTO zbp_upload (ul_AuthorID, ul_Size, ul_Name, ul_SourceName, ul_MimeType, ul_PostTime, ul_DownNums, ul_LogID, ul_Intro, ul_Meta) VALUES (1, ?, ?, ?, '{$contentType}', ?, 0, 0, '', '')",
-                [$size, $newName, basename($url), $time]
+                "INSERT INTO zbp_upload (ul_AuthorID, ul_Size, ul_Name, ul_SourceName, ul_MimeType, ul_PostTime, ul_DownNums, ul_LogID, ul_Intro, ul_Meta) VALUES (1, ?, ?, ?, ?, ?, 0, 0, '', '')",
+                [$size, $newName, basename($url), $mime, $time]
             );
 
             return [
                 'id' => (int)\App\Database::lastInsertId(),
                 'name' => $newName,
                 'size' => $size,
+                'mime' => $mime,
                 'url' => "/users/upload/{$year}/{$month}/" . $newName
             ];
         }

@@ -469,6 +469,31 @@ class Upload {
     }
 
     /**
+     * 安全获取文件 MIME 类型（不依赖 fileinfo 扩展）
+     */
+    public static function getMimeType(string $path, string $ext = ''): string {
+        if (empty($ext)) {
+            $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        }
+        if (function_exists('mime_content_type') && file_exists($path)) {
+            $detected = @mime_content_type($path);
+            if (!empty($detected)) return $detected;
+        }
+        $mimeMap = [
+            'png' => 'image/png', 'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'gif' => 'image/gif',
+            'webp' => 'image/webp', 'svg' => 'image/svg+xml', 'bmp' => 'image/bmp', 'ico' => 'image/x-icon',
+            'pdf' => 'application/pdf', 'zip' => 'application/zip', 'rar' => 'application/x-rar-compressed',
+            '7z' => 'application/x-7z-compressed', 'tar' => 'application/x-tar', 'gz' => 'application/gzip',
+            'doc' => 'application/msword', 'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'xls' => 'application/vnd.ms-excel', 'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'ppt' => 'application/vnd.ms-powerpoint', 'pptx' => 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+            'txt' => 'text/plain', 'md' => 'text/markdown', 'json' => 'application/json', 'mp3' => 'audio/mpeg',
+            'mp4' => 'video/mp4', 'wav' => 'audio/wav', 'css' => 'text/css', 'js' => 'application/javascript'
+        ];
+        return $mimeMap[$ext] ?? 'application/octet-stream';
+    }
+
+    /**
      * 处理上传新文件
      */
     public static function handleUpload(array $file): ?array {
@@ -478,19 +503,20 @@ class Upload {
 
         $origName = $file['name'];
         $ext = strtolower(pathinfo($origName, PATHINFO_EXTENSION));
+        if (empty($ext)) $ext = 'png';
         $year = date('Y');
         $month = date('m');
         $targetDir = UPLOAD_PATH . "/{$year}/{$month}";
         if (!is_dir($targetDir)) {
-            mkdir($targetDir, 0777, true);
+            @mkdir($targetDir, 0777, true);
         }
 
         $newName = date('YmdHis') . rand(1000, 9999) . '.' . $ext;
         $targetPath = $targetDir . '/' . $newName;
 
         if (move_uploaded_file($file['tmp_name'], $targetPath)) {
-            $size = filesize($targetPath);
-            $mime = mime_content_type($targetPath) ?: 'application/octet-stream';
+            $size = @filesize($targetPath) ?: 0;
+            $mime = self::getMimeType($targetPath, $ext);
             $time = time();
 
             Database::execute(

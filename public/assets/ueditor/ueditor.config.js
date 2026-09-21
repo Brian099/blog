@@ -23,6 +23,11 @@
         ]],
         initialFrameHeight: 520,
         autoHeightEnabled: false,
+        iframeCssUrl: "/assets/ueditor/themes/iframe.css",
+        sourceEditor: "textarea",
+        enableAutoSave: false,
+        elementPathEnabled: false,
+        wordCount: true,
         zIndex: 10
     };
 })();
