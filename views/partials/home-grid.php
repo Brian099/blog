@@ -43,16 +43,11 @@ $svgEye   = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke=
     <?php if ($hero): ?>
         <section class="home-top">
             <a class="hero-card" href="/?id=<?= (int)$hero['id'] ?>">
-                <div class="home-card-head">
-                    <?php if (!empty($hero['cate_name'])): ?>
-                        <span class="card-cat"><?= htmlspecialchars($hero['cate_name']) ?></span>
-                    <?php endif; ?>
-                    <?php if (!empty($hero['is_top'])): ?>
-                        <span class="card-pin">置顶</span>
-                    <?php elseif (empty($topIsPinned)): ?>
-                        <span class="card-latest">最新</span>
-                    <?php endif; ?>
-                </div>
+                <?php if (!empty($hero['is_top'])): ?>
+                    <div class="home-card-head"><span class="card-pin">置顶</span></div>
+                <?php elseif (empty($topIsPinned)): ?>
+                    <div class="home-card-head"><span class="card-latest">最新</span></div>
+                <?php endif; ?>
 
                 <h2 class="hero-card-title">
                     <?php if (!empty($hero['is_protected'])): ?><span class="card-lock" title="密码保护">🔒</span><?php endif; ?>
@@ -82,14 +77,9 @@ $svgEye   = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke=
                 <div class="feature-grid">
                     <?php foreach ($features as $item): ?>
                         <a class="feature-card" href="/?id=<?= (int)$item['id'] ?>">
-                            <div class="home-card-head">
-                                <?php if (!empty($item['cate_name'])): ?>
-                                    <span class="card-cat"><?= htmlspecialchars($item['cate_name']) ?></span>
-                                <?php endif; ?>
-                                <?php if (!empty($item['is_top'])): ?>
-                                    <span class="card-pin">置顶</span>
-                                <?php endif; ?>
-                            </div>
+                            <?php if (!empty($item['is_top'])): ?>
+                                <div class="home-card-head"><span class="card-pin">置顶</span></div>
+                            <?php endif; ?>
 
                             <h3 class="feature-card-title">
                                 <?php if (!empty($item['is_protected'])): ?><span class="card-lock" title="密码保护">🔒</span><?php endif; ?>
