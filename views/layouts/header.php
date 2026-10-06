@@ -18,7 +18,7 @@ $customNav = !empty($siteSettings['custom_nav']) ? json_decode($siteSettings['cu
     <script src="/assets/js/highlight.min.js"></script>
     <script>window.SITE_NAME = <?= json_encode($siteName) ?>;</script>
 </head>
-<body>
+<body data-view="<?= htmlspecialchars($viewMode ?? 'home') ?>">
 
 <header class="site-header">
     <div class="header-left">

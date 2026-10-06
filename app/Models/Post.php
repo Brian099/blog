@@ -42,15 +42,7 @@ class Post {
         $yearGroups = [];
 
         foreach ($rows as $row) {
-            $isProtected = false;
-            if (!empty($row['log_Meta'])) {
-                $meta = json_decode($row['log_Meta'], true);
-                if (is_array($meta) && !empty($meta['password'])) {
-                    $isProtected = true;
-                } elseif (preg_match('/password[:=]([^\s;,]+)/i', (string)$row['log_Meta'], $pm) && !empty($pm[1])) {
-                    $isProtected = true;
-                }
-            }
+            $isProtected = self::metaHasPassword($row['log_Meta'] ?? '');
 
             $item = [
                 'id' => (int)$row['log_ID'],
@@ -87,6 +79,118 @@ class Post {
         }
 
         return $tree;
+    }
+
+    /**
+     * 判断 log_Meta 中是否设置了访问密码
+     */
+    private static function metaHasPassword($rawMeta): bool {
+        if (empty($rawMeta)) return false;
+        $meta = json_decode((string)$rawMeta, true);
+        if (is_array($meta) && !empty($meta['password'])) return true;
+        if (preg_match('/password[:=]([^\s;,]+)/i', (string)$rawMeta, $pm) && !empty($pm[1])) return true;
+        return false;
+    }
+
+    /**
+     * 首页卡片通用查询（仅公开文章，支持分类 / 标签 / 关键词过滤，可选仅置顶）
+     */
+    private static function queryCardRows(?int $categoryId, ?int $tagId, string $keyword, bool $pinnedOnly, int $limit): array {
+        $sql = "SELECT log_ID, log_Title, log_Intro, log_Content, log_PostTime, log_CateID, log_Tag, log_ViewNums, log_IsTop, log_Meta
+                FROM zbp_post
+                WHERE log_Status = 0 AND log_Type = 0";
+        $params = [];
+
+        if ($pinnedOnly) {
+            $sql .= " AND log_IsTop = 1";
+        }
+        if ($categoryId !== null && $categoryId > 0) {
+            $sql .= " AND log_CateID = ?";
+            $params[] = $categoryId;
+        }
+        if (!empty($keyword)) {
+            $sql .= " AND (log_Title LIKE ? OR log_Content LIKE ?)";
+            $params[] = "%{$keyword}%";
+            $params[] = "%{$keyword}%";
+        }
+
+        $sql .= " ORDER BY log_PostTime DESC LIMIT " . max(1, min(60, $limit));
+
+        $rows = Database::query($sql, $params);
+
+        // 标签在 Z-Blog 中以 {1}{2} 形式存储，需在内存中过滤
+        if ($tagId !== null && $tagId > 0) {
+            $needle = "{" . $tagId . "}";
+            $rows = array_values(array_filter($rows, function ($r) use ($needle) {
+                return strpos((string)$r['log_Tag'], $needle) !== false;
+            }));
+        }
+
+        return $rows;
+    }
+
+    /**
+     * 装配首页卡片数据：摘要、分类名、标签、阅读时长、阅读量
+     */
+    private static function hydrateCards(array $rows): array {
+        if (empty($rows)) return [];
+
+        $cateMap = [];
+        foreach (Category::getAll() as $c) {
+            $cateMap[(int)$c['cate_ID']] = $c['cate_Name'];
+        }
+        $tagMap = [];
+        foreach (Tag::getAll() as $t) {
+            $tagMap[(int)$t['tag_ID']] = $t['tag_Name'];
+        }
+
+        $cards = [];
+        foreach ($rows as $row) {
+            $content = (string)($row['log_Content'] ?? '');
+            $intro = trim((string)($row['log_Intro'] ?? ''));
+            $cateId = (int)($row['log_CateID'] ?? 0);
+
+            // 卡片最多展示 3 个标签
+            $tagNames = [];
+            if (!empty($row['log_Tag']) && preg_match_all('/\{(\d+)\}/', (string)$row['log_Tag'], $m)) {
+                foreach (array_unique($m[1]) as $tid) {
+                    if (isset($tagMap[(int)$tid])) {
+                        $tagNames[] = $tagMap[(int)$tid];
+                    }
+                    if (count($tagNames) >= 3) break;
+                }
+            }
+
+            $cards[] = [
+                'id' => (int)($row['log_ID'] ?? 0),
+                'title' => (string)($row['log_Title'] ?? '无标题'),
+                'excerpt' => Helpers::getSnippet($intro !== '' ? $intro : $content, 96),
+                'date' => Helpers::formatDate((int)($row['log_PostTime'] ?? 0), 'Y-m-d'),
+                'cate_id' => $cateId,
+                'cate_name' => $cateMap[$cateId] ?? '',
+                'tags' => $tagNames,
+                'views' => (int)($row['log_ViewNums'] ?? 0),
+                'read_time' => Helpers::estimateReadingTime($content !== '' ? $content : $intro),
+                'is_top' => (int)($row['log_IsTop'] ?? 0),
+                'is_protected' => self::metaHasPassword($row['log_Meta'] ?? '')
+            ];
+        }
+
+        return $cards;
+    }
+
+    /**
+     * 首页顶部推荐区：置顶文章（按发布时间倒序）
+     */
+    public static function getPinnedPosts(?int $categoryId = null, ?int $tagId = null, string $keyword = '', int $limit = 5): array {
+        return self::hydrateCards(self::queryCardRows($categoryId, $tagId, $keyword, true, $limit));
+    }
+
+    /**
+     * 首页最新发布文章
+     */
+    public static function getLatestPosts(?int $categoryId = null, ?int $tagId = null, string $keyword = '', int $limit = 12): array {
+        return self::hydrateCards(self::queryCardRows($categoryId, $tagId, $keyword, false, $limit));
     }
 
     /**

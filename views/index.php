@@ -69,10 +69,14 @@
         </div>
     </aside>
 
-    <!-- Right Main Area: Immersive Article Reading Area -->
+    <!-- Right Main Area: Home Card Grid or Article Reading Area -->
     <section class="article-main">
         <div id="article-content-wrapper" style="width: 100%; display: flex; justify-content: center; transition: opacity 0.15s ease;">
-            <?php $post = $currentPost; require VIEW_PATH . '/partials/post-content.php'; ?>
+            <?php if ($viewMode === 'home'): ?>
+                <?php require VIEW_PATH . '/partials/home-grid.php'; ?>
+            <?php else: ?>
+                <?php $post = $currentPost; require VIEW_PATH . '/partials/post-content.php'; ?>
+            <?php endif; ?>
         </div>
     </section>
 </main>

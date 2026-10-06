@@ -55,6 +55,9 @@ function initArticleNavigation() {
         const link = e.target.closest('.post-nav-link');
         if (!link) return;
 
+        // 首页卡片网格模式下不拦截，交由浏览器整页跳转，保证返回键可回到网格
+        if (document.body.dataset.view === 'home') return;
+
         e.preventDefault();
         const postId = link.getAttribute('data-id');
         if (!postId) return;
